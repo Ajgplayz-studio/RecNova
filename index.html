@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RecNova</title>
-<meta name="description" content="RecNova — a 3D hangout in your browser.">
+<meta name="description" content="RecNova — a 3D hangout in your browser. Dorm room, Rec Center, and your watch.">
 <script>
 // GitHub Pages is just a forwarder — the real site lives on Cloudflare.
 if (location.hostname.indexOf('github.io') !== -1) {
@@ -36,6 +36,27 @@ if (location.hostname.indexOf('github.io') !== -1) {
     background:#fff; border-radius:50%; opacity:.85; box-shadow:0 0 4px rgba(0,0,0,.6); }
   #tag { position:absolute; top:14px; left:16px; color:#fff; font-size:13px; font-weight:600;
     text-shadow:0 1px 4px rgba(0,0,0,.7); opacity:.9; }
+  #watchbtn { position:absolute; right:18px; bottom:18px; width:52px; height:52px; border-radius:50%;
+    background:rgba(20,24,40,.85); border:1px solid rgba(255,255,255,.15); color:#fff; font-size:24px;
+    display:flex; align-items:center; justify-content:center; cursor:pointer; pointer-events:auto; }
+  #watchbtn:hover { background:rgba(88,101,242,.85); }
+  /* ------- the watch ------- */
+  #watch { position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
+    background:rgba(3,5,12,.55); z-index:20; }
+  #watch.hidden { display:none; }
+  .watch-face { width:min(340px, 90vw); background:linear-gradient(160deg,#1a1f33,#0d1120);
+    border:2px solid rgba(139,92,246,.5); border-radius:28px; padding:26px 24px; text-align:center;
+    box-shadow:0 0 60px rgba(139,92,246,.25), 0 24px 80px rgba(0,0,0,.6); color:#fff; }
+  .watch-face .wtime { font-size:30px; font-weight:700; letter-spacing:2px; margin-bottom:2px; }
+  .watch-face .wdate { font-size:12px; color:#8b8e99; margin-bottom:18px; }
+  .watch-face button { display:block; width:100%; margin:0 0 10px; padding:13px; border-radius:14px;
+    border:1px solid rgba(255,255,255,.12); background:rgba(88,101,242,.9); color:#fff;
+    font-size:15px; font-weight:700; cursor:pointer; }
+  .watch-face button:hover:not(:disabled) { filter:brightness(1.12); }
+  .watch-face button:disabled { background:rgba(255,255,255,.07); color:#6b6e7a; cursor:default; }
+  .watch-face button .sub { display:block; font-size:11px; font-weight:400; opacity:.75; margin-top:2px; }
+  .watch-face .wresume { background:rgba(255,255,255,.1); }
+  .watch-face .whint { font-size:11px; color:#6b6e7a; margin-top:6px; }
 </style>
 <script type="importmap">
 { "imports": {
@@ -50,12 +71,26 @@ if (location.hostname.indexOf('github.io') !== -1) {
   <div class="card">
     <div class="logo">🎮</div>
     <h1>Rec<span>Nova</span></h1>
-    <p>The 3D hangout — right in your browser.</p>
+    <p>Your dorm. The Rec Center. All in your browser.</p>
     <div class="play">Click to play</div>
-    <div class="keys"><b>W A S D</b> move &nbsp;·&nbsp; <b>Mouse</b> look &nbsp;·&nbsp; <b>Space</b> jump &nbsp;·&nbsp; <b>Shift</b> sprint</div>
+    <div class="keys"><b>W A S D</b> move &nbsp;·&nbsp; <b>Mouse</b> look &nbsp;·&nbsp; <b>Space</b> jump &nbsp;·&nbsp; <b>Shift</b> sprint &nbsp;·&nbsp; <b>Tab</b> watch</div>
   </div>
 </div>
-<div id="hud"><div id="cross"></div><div id="tag">◈ RecNova · web v1</div></div>
+<div id="hud">
+  <div id="cross"></div>
+  <div id="tag">◈ RecNova · web v1</div>
+  <div id="watchbtn" title="Open watch (Tab)">⌚</div>
+</div>
+<div id="watch" class="hidden">
+  <div class="watch-face">
+    <div class="wtime" id="wtime">--:--</div>
+    <div class="wdate" id="wdate"></div>
+    <button id="w-dorm">🏠 Dorm Room<span class="sub"></span></button>
+    <button id="w-rec">🎯 Rec Center<span class="sub"></span></button>
+    <button id="w-resume" class="wresume">Resume</button>
+    <div class="whint">Your watch — hop between your dorm and the Rec Center.</div>
+  </div>
+</div>
 
 <script type="module">
 import * as THREE from 'three';
@@ -85,115 +120,237 @@ sun.shadow.camera.top = 45; sun.shadow.camera.bottom = -45;
 sun.shadow.camera.far = 120;
 scene.add(sun);
 
-/* ---------- collision world ---------- */
-const R = 0.45;                 // player radius
-const solids = [];              // {x0,x1,y0,y1,z0,z1}
-function box(w, h, d, x, y, z, color, emissive){
-  const mat = new THREE.MeshStandardMaterial({ color, roughness:.85, metalness:.05 });
-  if(emissive){ mat.emissive = new THREE.Color(emissive); mat.emissiveIntensity = .55; }
-  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
-  m.position.set(x, y + h/2, z);
-  m.castShadow = m.receiveShadow = true;
-  scene.add(m);
-  solids.push({ x0:x-w/2, x1:x+w/2, y0:y, y1:y+h, z0:z-d/2, z1:z+d/2 });
-  return m;
+/* ---------- world building helpers ---------- */
+const R = 0.45;
+function makeWorld(){
+  const group = new THREE.Group();
+  const solids = [];
+  const pads = [];
+  const balls = [];
+  function box(w, h, d, x, y, z, color, emissive, noCollide){
+    const mat = new THREE.MeshStandardMaterial({ color, roughness:.85, metalness:.05 });
+    if(emissive){ mat.emissive = new THREE.Color(emissive); mat.emissiveIntensity = .55; }
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+    m.position.set(x, y + h/2, z);
+    m.castShadow = m.receiveShadow = true;
+    group.add(m);
+    if(!noCollide) solids.push({ x0:x-w/2, x1:x+w/2, y0:y, y1:y+h, z0:z-d/2, z1:z+d/2 });
+    return m;
+  }
+  function plane(w, d, x, y, z, color, ry){
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, d),
+      new THREE.MeshStandardMaterial({ color, roughness:.9 }));
+    m.rotation.x = -Math.PI/2;
+    if(ry) m.rotation.z = ry;
+    m.position.set(x, y, z);
+    m.receiveShadow = true;
+    group.add(m);
+    return m;
+  }
+  return { group, solids, pads, balls, box, plane };
 }
 
-/* floor: bright checker */
+/* ================= DORM ROOM ================= */
+function buildDorm(){
+  const w = makeWorld();
+  const { box, plane, pads } = w;
+  // floor + ceiling + walls (10 x 8, height 3.2)
+  plane(10, 8, 0, 0, 0, 0xc9a876);
+  const ceil = new THREE.Mesh(new THREE.PlaneGeometry(10, 8),
+    new THREE.MeshStandardMaterial({ color:0xf2ede4, roughness:1 }));
+  ceil.rotation.x = Math.PI/2; ceil.position.set(0, 3.2, 0); w.group.add(ceil);
+  const WC = 0x9fb4d8;
+  box(10, 3.2, .4,  0, 0, -4.2, WC);
+  box(10, 3.2, .4,  0, 0,  4.2, WC);
+  box(.4, 3.2, 8, -5.2, 0, 0, WC);
+  box(.4, 3.2, 8,  5.2, 0, 0, WC);
+  // bed (collider covers frame+mattress so feet rest on top)
+  box(2.2, 1.28, 3.4, -3, 0, -1.8, 0x8b5a2b);
+  box(2.0, .28, 3.2, -3, 1.0, -1.8, 0xf5f0e6, null, true);
+  box(1.4, .18, .7, -3, 1.28, -3.0, 0xffffff, null, true);
+  box(2.0, .1, 1.6, -3, 1.28, -1.0, 0x3b82f6, null, true);
+  // desk + monitor + chair
+  box(2.6, .86, 1.3, 2.8, 0, -2.6, 0x6b4a2f);
+  box(.9, .6, .12, 2.8, .86, -2.9, 0x1a1a1a, null, true);
+  box(.5, .1, .5, 2.8, .86, -2.55, 0x333333, null, true);
+  box(.9, .55, .9, 2.8, 0, -.9, 0x444c5e);
+  box(.9, .8, .14, 2.8, .55, -.5, 0x444c5e, null, true);
+  // rug
+  const rug = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.5, .04, 28),
+    new THREE.MeshStandardMaterial({ color:0x8b5cf6, roughness:1 }));
+  rug.position.set(.6, .02, 1.2); rug.receiveShadow = true; w.group.add(rug);
+  // window (emissive) on north wall
+  box(2.8, 2.0, .1, 1.5, 1.0, -4.05, 0x3a3f4a);
+  const win = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 1.6),
+    new THREE.MeshBasicMaterial({ color:0xbfe9ff }));
+  win.position.set(1.5, 2.0, -3.98); w.group.add(win);
+  // door on south wall
+  box(1.3, 2.5, .12, -2.5, 0, 4.05, 0x6b4a2f);
+  // shelf + books
+  box(2.2, .12, .6, 4.2, 1.9, -3.9, 0x6b4a2f);
+  box(.3, .5, .4, 3.6, 2.02, -3.9, 0xef4444, null, true);
+  box(.3, .5, .4, 3.95, 2.02, -3.9, 0x22c55e, null, true);
+  box(.3, .5, .4, 4.3, 2.02, -3.9, 0x3b82f6, null, true);
+  // poster on east wall
+  const poster = new THREE.Mesh(new THREE.PlaneGeometry(1.7, 2.3),
+    new THREE.MeshStandardMaterial({ color:0xf472b6, roughness:.9 }));
+  poster.rotation.y = -Math.PI/2; poster.position.set(4.98, 1.8, 1.5); w.group.add(poster);
+  // warm lamp light
+  const lamp = new THREE.PointLight(0xffd9a0, 12, 12);
+  lamp.position.set(0, 2.9, 0); w.group.add(lamp);
+  return { ...w, spawn:{ pos:new THREE.Vector3(0, 0, 2.6), yaw:0 } };
+}
+
+/* ================= REC CENTER ================= */
 function checkerTexture(){
   const c = document.createElement('canvas'); c.width = c.height = 128;
   const g = c.getContext('2d');
   g.fillStyle = '#e8edf5'; g.fillRect(0,0,128,128);
   g.fillStyle = '#b9c6e2'; g.fillRect(0,0,64,64); g.fillRect(64,64,64,64);
   const t = new THREE.CanvasTexture(c);
-  t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(30, 30);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(22, 22);
   return t;
 }
-const floor = new THREE.Mesh(
-  new THREE.PlaneGeometry(60, 60),
-  new THREE.MeshStandardMaterial({ map:checkerTexture(), roughness:.9 })
-);
-floor.rotation.x = -Math.PI/2;
-floor.receiveShadow = true;
-scene.add(floor);
-
-/* walls */
-const WALL = 29.5;
-box(60, 6, 1,  0, 0, -WALL, 0xff6b35);
-box(60, 6, 1,  0, 0,  WALL, 0x3b82f6);
-box(1, 6, 60, -WALL, 0, 0, 0x22c55e);
-box(1, 6, 60,  WALL, 0, 0, 0xa855f7);
-
-/* center stage + stairs */
-box(10, 1, 10, 0, 0, 0, 0x7c3aed);
-box(5, .34, 1.2, 0, 0, 6.6, 0xfbbf24);
-box(5, .67, 1.2, 0, 0, 7.8, 0xf59e0b);
-box(5, 1.0, 1.2, 0, 0, 9.0, 0xfbbf24);
-
-/* sky platform (reach it via bounce pads) */
-box(16, .6, 3, 0, 2.7, -12, 0x3b82f6);
-box(2, 3.3, 2, -9, 0, -12, 0x6366f1);
-box(2, 3.3, 2,  9, 0, -12, 0x6366f1);
-
-/* parkour cubes */
-box(2, 2, 2, -14, 0, 8, 0xef4444);
-box(2, 3, 2, -11, 0, 11, 0xef4444);
-box(2, 2, 2, 14, 0, 6, 0x14b8a6);
-box(2, 4, 2, 11.5, 0, 9, 0x14b8a6);
-box(3, 1.2, 3, -4, 0, 16, 0xf97316);
-
-/* bounce pads */
-const pads = [];
-function bouncePad(x, z){
-  const geo = new THREE.CylinderGeometry(1.3, 1.5, .3, 24);
-  const mat = new THREE.MeshStandardMaterial({ color:0x22ff88, emissive:0x22ff88, emissiveIntensity:.8, roughness:.4 });
-  const m = new THREE.Mesh(geo, mat);
-  m.position.set(x, .15, z);
-  m.receiveShadow = true;
-  scene.add(m);
-  pads.push({ x, z, r:1.4 });
-}
-bouncePad(-5, -12); bouncePad(5, -12); bouncePad(0, 18);
-
-/* bouncy balls */
-const balls = [];
-const ballColors = [0xff4757, 0x2ed573, 0x1e90ff, 0xffa502, 0xeccc68, 0x7bed9f, 0x70a1ff, 0xff6b81];
-for(let i = 0; i < 8; i++){
-  const r = .45 + Math.random() * .25;
-  const mesh = new THREE.Mesh(
-    new THREE.SphereGeometry(r, 24, 18),
-    new THREE.MeshStandardMaterial({ color:ballColors[i], roughness:.35 })
-  );
-  mesh.castShadow = true;
-  scene.add(mesh);
-  balls.push({
-    mesh, r,
-    pos: new THREE.Vector3((Math.random()-.5)*36, 3 + Math.random()*4, (Math.random()-.5)*36),
-    vel: new THREE.Vector3((Math.random()-.5)*6, 0, (Math.random()-.5)*6)
+function buildRecCenter(){
+  const w = makeWorld();
+  const { box, pads, balls, group } = w;
+  const W = 22; // half-size
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(W*2, W*2),
+    new THREE.MeshStandardMaterial({ map:checkerTexture(), roughness:.9 }));
+  floor.rotation.x = -Math.PI/2; floor.receiveShadow = true; group.add(floor);
+  // walls
+  box(W*2, 9, 1,  0, 0, -W, 0xff6b35);
+  box(W*2, 9, 1,  0, 0,  W, 0x3b82f6);
+  box(1, 9, W*2, -W, 0, 0, 0x22c55e);
+  box(1, 9, W*2,  W, 0, 0, 0xa855f7);
+  // center emblem
+  const emblem = new THREE.Mesh(new THREE.CylinderGeometry(4, 4, .08, 40),
+    new THREE.MeshStandardMaterial({ color:0x8b5cf6, emissive:0x8b5cf6, emissiveIntensity:.35, roughness:.6 }));
+  emblem.position.set(0, .04, 0); emblem.receiveShadow = true; group.add(emblem);
+  // stage (north)
+  const stage = new THREE.Mesh(new THREE.CylinderGeometry(6, 6.4, 1.2, 36),
+    new THREE.MeshStandardMaterial({ color:0x7c3aed, roughness:.8 }));
+  stage.position.set(0, .6, -12); stage.castShadow = stage.receiveShadow = true; group.add(stage);
+  w.solids.push({ x0:-6, x1:6, y0:0, y1:1.2, z0:-18, z1:-6 });
+  // stairs to stage (ascending toward the stage)
+  box(5, .4, 1.2, 0, 0, -3.4, 0xfbbf24);
+  box(5, .8, 1.2, 0, 0, -4.6, 0xf59e0b);
+  // pillars
+  [[-14,-14],[14,-14],[-14,14],[14,14]].forEach(([x,z]) => box(1.6, 9, 1.6, x, 0, z, 0xe2e8f0));
+  // benches
+  box(4, .5, 1.2, -8, 0, 8, 0xb08968);
+  box(4, .5, 1.2, 8, 0, 8, 0xb08968);
+  // banners on walls
+  const bannerMat = new THREE.MeshBasicMaterial({ color:0xfacc15 });
+  [[-8,-W+.6,0],[8,-W+.6,0]].forEach(([x,z]) => {
+    const b = new THREE.Mesh(new THREE.PlaneGeometry(3, 1.4), bannerMat);
+    b.position.set(x, 6, z); group.add(b);
   });
+  // bounce pads
+  function bouncePad(x, z){
+    const m = new THREE.Mesh(new THREE.CylinderGeometry(1.3, 1.5, .3, 24),
+      new THREE.MeshStandardMaterial({ color:0x22ff88, emissive:0x22ff88, emissiveIntensity:.8, roughness:.4 }));
+    m.position.set(x, .15, z); m.receiveShadow = true; group.add(m);
+    pads.push({ x, z, r:1.4 });
+  }
+  bouncePad(-6, 4); bouncePad(6, 4);
+  // bouncy balls
+  const ballColors = [0xff4757, 0x2ed573, 0x1e90ff, 0xffa502, 0xeccc68, 0x7bed9f, 0x70a1ff, 0xff6b81];
+  for(let i = 0; i < 8; i++){
+    const r = .45 + Math.random() * .25;
+    const mesh = new THREE.Mesh(new THREE.SphereGeometry(r, 24, 18),
+      new THREE.MeshStandardMaterial({ color:ballColors[i], roughness:.35 }));
+    mesh.castShadow = true; group.add(mesh);
+    balls.push({
+      mesh, r,
+      pos: new THREE.Vector3((Math.random()-.5)*28, 3 + Math.random()*4, (Math.random()-.5)*28),
+      vel: new THREE.Vector3((Math.random()-.5)*6, 0, (Math.random()-.5)*6)
+    });
+  }
+  return { ...w, spawn:{ pos:new THREE.Vector3(0, 0, 15), yaw:0 }, wall:W };
 }
+
+/* ---------- scenes ---------- */
+const scenes = { dorm: buildDorm(), rec: buildRecCenter() };
+scene.add(scenes.dorm.group);
+scene.add(scenes.rec.group);
+let current = 'dorm';
+let solids = scenes.dorm.solids;
+let pads = scenes.dorm.pads;
+let balls = scenes.dorm.balls;
+let WALL = 5;
 
 /* ---------- player ---------- */
-const pos = new THREE.Vector3(0, 0, 14);   // feet position
+const pos = new THREE.Vector3();
 const vel = new THREE.Vector3();
 let yaw = 0, pitch = 0, grounded = false;
 const keys = {};
-addEventListener('keydown', e => { keys[e.code] = true; if(e.code === 'Space') e.preventDefault(); });
-addEventListener('keyup',   e => { keys[e.code] = false; });
+addEventListener('keydown', e => {
+  if(e.code === 'Tab'){ e.preventDefault(); toggleWatch(); return; }
+  keys[e.code] = true;
+  if(e.code === 'Space') e.preventDefault();
+});
+addEventListener('keyup', e => { keys[e.code] = false; });
 addEventListener('resize', () => {
   camera.aspect = innerWidth/innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(innerWidth, innerHeight);
 });
 
+function setScene(name){
+  current = name;
+  const s = scenes[name];
+  scenes.dorm.group.visible = name === 'dorm';
+  scenes.rec.group.visible = name === 'rec';
+  solids = s.solids; pads = s.pads; balls = s.balls;
+  WALL = s.wall || 5;
+  pos.copy(s.spawn.pos); vel.set(0, 0, 0);
+  yaw = s.spawn.yaw; pitch = 0;
+  document.getElementById('tag').textContent =
+    '◈ RecNova · ' + (name === 'dorm' ? 'Dorm Room' : 'Rec Center');
+  updateWatchButtons();
+}
+
+/* ---------- the watch ---------- */
+const watchEl = document.getElementById('watch');
+const wDorm = document.getElementById('w-dorm');
+const wRec = document.getElementById('w-rec');
+let watchOpen = false;
+function updateWatchButtons(){
+  const inDorm = current === 'dorm';
+  wDorm.disabled = inDorm;
+  wRec.disabled = !inDorm;
+  wDorm.querySelector('.sub').textContent = inDorm ? "You're here" : 'Teleport';
+  wRec.querySelector('.sub').textContent = !inDorm ? "You're here" : 'Teleport';
+  const d = new Date();
+  document.getElementById('wtime').textContent =
+    String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+  document.getElementById('wdate').textContent = d.toLocaleDateString(undefined,
+    { weekday:'long', month:'long', day:'numeric' });
+}
+function openWatch(){
+  if(document.pointerLockElement) document.exitPointerLock();
+  updateWatchButtons();
+  watchEl.classList.remove('hidden');
+  watchOpen = true;
+}
+function closeWatch(){ watchEl.classList.add('hidden'); watchOpen = false; }
+function toggleWatch(){ watchOpen ? closeWatch() : openWatch(); }
+function lockPointer(){ renderer.domElement.requestPointerLock(); }
+wDorm.onclick = () => { setScene('dorm'); closeWatch(); lockPointer(); };
+wRec.onclick = () => { setScene('rec'); closeWatch(); lockPointer(); };
+document.getElementById('w-resume').onclick = () => { closeWatch(); lockPointer(); };
+document.getElementById('watchbtn').onclick = () => openWatch();
+
+/* ---------- pointer lock / overlay ---------- */
 const overlay = document.getElementById('overlay');
 const hud = document.getElementById('hud');
 let locked = false;
-overlay.addEventListener('click', () => renderer.domElement.requestPointerLock());
+overlay.addEventListener('click', () => lockPointer());
 document.addEventListener('pointerlockchange', () => {
   locked = document.pointerLockElement === renderer.domElement;
-  overlay.classList.toggle('hidden', locked);
-  hud.style.display = locked ? 'block' : 'none';
+  overlay.classList.toggle('hidden', locked || watchOpen);
+  hud.style.display = (locked && !watchOpen) ? 'block' : 'none';
 });
 document.addEventListener('mousemove', e => {
   if(!locked) return;
@@ -202,6 +359,7 @@ document.addEventListener('mousemove', e => {
   pitch = Math.max(-1.45, Math.min(1.45, pitch));
 });
 
+/* ---------- collision ---------- */
 function supportAt(x, z, feetY){
   let s = 0;
   for(const b of solids){
@@ -229,15 +387,14 @@ function collideHoriz(){
 /* ---------- main loop ---------- */
 const clock = new THREE.Clock();
 const fwd = new THREE.Vector3(), rgt = new THREE.Vector3();
+setScene('dorm');
 
 function tick(){
   requestAnimationFrame(tick);
   const dt = Math.min(clock.getDelta(), 0.05);
 
-  if(locked){
-    // look
+  if(locked && !watchOpen){
     camera.quaternion.setFromEuler(new THREE.Euler(pitch, yaw, 0, 'YXZ'));
-    // move
     fwd.set(-Math.sin(yaw), 0, -Math.cos(yaw));
     rgt.set( Math.cos(yaw), 0, -Math.sin(yaw));
     const sprint = keys['ShiftLeft'] || keys['ShiftRight'];
@@ -249,7 +406,6 @@ function tick(){
     const k = 1 - Math.pow(0.0001, dt);
     vel.x += (tx - vel.x) * k;
     vel.z += (tz - vel.z) * k;
-    // gravity + jump
     vel.y -= 22 * dt;
     if(grounded && keys['Space']){ vel.y = 8.6; grounded = false; }
 
@@ -260,7 +416,6 @@ function tick(){
     if(pos.y <= s){ pos.y = s; vel.y = 0; grounded = true; }
     else grounded = false;
 
-    // bounce pads
     if(grounded){
       for(const p of pads){
         const dx = pos.x - p.x, dz = pos.z - p.z;
@@ -269,17 +424,16 @@ function tick(){
     }
   }
 
-  // balls
   for(const b of balls){
     b.vel.y -= 20 * dt;
     b.pos.addScaledVector(b.vel, dt);
     if(b.pos.y < b.r){ b.pos.y = b.r; b.vel.y *= -0.72; b.vel.x *= .985; b.vel.z *= .985; }
-    if(b.pos.x < -WALL + 1 + b.r){ b.pos.x = -WALL + 1 + b.r; b.vel.x *= -0.8; }
-    if(b.pos.x >  WALL - 1 - b.r){ b.pos.x =  WALL - 1 - b.r; b.vel.x *= -0.8; }
-    if(b.pos.z < -WALL + 1 + b.r){ b.pos.z = -WALL + 1 + b.r; b.vel.z *= -0.8; }
-    if(b.pos.z >  WALL - 1 - b.r){ b.pos.z =  WALL - 1 - b.r; b.vel.z *= -0.8; }
-    // player kick
-    if(locked){
+    const lim = WALL - 1;
+    if(b.pos.x < -lim + b.r){ b.pos.x = -lim + b.r; b.vel.x *= -0.8; }
+    if(b.pos.x >  lim - b.r){ b.pos.x =  lim - b.r; b.vel.x *= -0.8; }
+    if(b.pos.z < -lim + b.r){ b.pos.z = -lim + b.r; b.vel.z *= -0.8; }
+    if(b.pos.z >  lim - b.r){ b.pos.z =  lim - b.r; b.vel.z *= -0.8; }
+    if(locked && !watchOpen){
       const dx = b.pos.x - pos.x, dz = b.pos.z - pos.z;
       const d = Math.hypot(dx, dz);
       if(d < b.r + 0.75 && Math.abs(b.pos.y - (pos.y + 0.9)) < 1.7 && d > 0.001){
