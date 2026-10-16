@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RecNova</title>
+<meta name="description" content="RecNova — a 3D hangout in your browser.">
+<script>
+// GitHub Pages is just a forwarder — the real site lives on Cloudflare.
+if (location.hostname.indexOf('github.io') !== -1) {
+  location.replace('https://recnova.foxcorpgames.workers.dev/' + location.search + location.hash);
+}
+</script>
+<style>
+  html, body { margin:0; padding:0; height:100%; overflow:hidden; background:#0b0e1a;
+    font-family:"Segoe UI", system-ui, sans-serif; }
+  canvas { display:block; }
+  #overlay { position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
+    background:radial-gradient(900px 600px at 50% 30%, rgba(88,101,242,.25), transparent 70%), rgba(5,7,15,.82);
+    z-index:10; cursor:pointer; }
+  #overlay.hidden { display:none; }
+  .card { text-align:center; color:#fff; padding:40px 48px; background:rgba(20,24,40,.85);
+    border:1px solid rgba(255,255,255,.08); border-radius:20px; box-shadow:0 24px 80px rgba(0,0,0,.5);
+    max-width:min(440px, 92vw); }
+  .card .logo { font-size:56px; }
+  .card h1 { margin:6px 0 4px; font-size:34px; letter-spacing:1px; }
+  .card h1 span { background:linear-gradient(135deg,#8b5cf6,#3b82f6);
+    -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
+  .card p { color:#a0a3ad; font-size:14px; margin:0 0 20px; }
+  .card .play { display:inline-block; background:#5865f2; color:#fff; font-weight:700; font-size:17px;
+    padding:13px 46px; border-radius:12px; }
+  .card .keys { margin-top:22px; font-size:12.5px; color:#8b8e99; line-height:1.9; }
+  .card .keys b { color:#d7d9e0; background:rgba(255,255,255,.08); border-radius:5px; padding:1px 7px; }
+  #hud { display:none; position:fixed; inset:0; pointer-events:none; z-index:5; }
+  #cross { position:absolute; left:50%; top:50%; width:6px; height:6px; margin:-3px;
+    background:#fff; border-radius:50%; opacity:.85; box-shadow:0 0 4px rgba(0,0,0,.6); }
+  #tag { position:absolute; top:14px; left:16px; color:#fff; font-size:13px; font-weight:600;
+    text-shadow:0 1px 4px rgba(0,0,0,.7); opacity:.9; }
+</style>
+<script type="importmap">
+{ "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+<noscript><div style="color:#fff;padding:40px;font-family:sans-serif">RecNova needs JavaScript. Or visit <a style="color:#8b9bff" href="https://recnova.foxcorpgames.workers.dev/">recnova.foxcorpgames.workers.dev</a></div></noscript>
+<div id="overlay">
+  <div class="card">
+    <div class="logo">🎮</div>
+    <h1>Rec<span>Nova</span></h1>
+    <p>The 3D hangout — right in your browser.</p>
+    <div class="play">Click to play</div>
+    <div class="keys"><b>W A S D</b> move &nbsp;·&nbsp; <b>Mouse</b> look &nbsp;·&nbsp; <b>Space</b> jump &nbsp;·&nbsp; <b>Shift</b> sprint</div>
+  </div>
+</div>
+<div id="hud"><div id="cross"></div><div id="tag">◈ RecNova · web v1</div></div>
+
+<script type="module">
+import * as THREE from 'three';
+
+/* ---------- renderer / scene ---------- */
+const renderer = new THREE.WebGLRenderer({ antialias:true });
+renderer.setSize(innerWidth, innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+document.body.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x87ceeb);
+scene.fog = new THREE.Fog(0x87ceeb, 45, 150);
+
+const camera = new THREE.PerspectiveCamera(75, innerWidth/innerHeight, 0.1, 400);
+
+scene.add(new THREE.HemisphereLight(0xcfe8ff, 0x3a4a2f, 0.9));
+const sun = new THREE.DirectionalLight(0xffffff, 1.6);
+sun.position.set(30, 45, 20);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.camera.left = -45; sun.shadow.camera.right = 45;
+sun.shadow.camera.top = 45; sun.shadow.camera.bottom = -45;
+sun.shadow.camera.far = 120;
+scene.add(sun);
+
+/* ---------- collision world ---------- */
+const R = 0.45;                 // player radius
+const solids = [];              // {x0,x1,y0,y1,z0,z1}
+function box(w, h, d, x, y, z, color, emissive){
+  const mat = new THREE.MeshStandardMaterial({ color, roughness:.85, metalness:.05 });
+  if(emissive){ mat.emissive = new THREE.Color(emissive); mat.emissiveIntensity = .55; }
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+  m.position.set(x, y + h/2, z);
+  m.castShadow = m.receiveShadow = true;
+  scene.add(m);
+  solids.push({ x0:x-w/2, x1:x+w/2, y0:y, y1:y+h, z0:z-d/2, z1:z+d/2 });
+  return m;
+}
+
+/* floor: bright checker */
+function checkerTexture(){
+  const c = document.createElement('canvas'); c.width = c.height = 128;
+  const g = c.getContext('2d');
+  g.fillStyle = '#e8edf5'; g.fillRect(0,0,128,128);
+  g.fillStyle = '#b9c6e2'; g.fillRect(0,0,64,64); g.fillRect(64,64,64,64);
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(30, 30);
+  return t;
+}
+const floor = new THREE.Mesh(
+  new THREE.PlaneGeometry(60, 60),
+  new THREE.MeshStandardMaterial({ map:checkerTexture(), roughness:.9 })
+);
+floor.rotation.x = -Math.PI/2;
+floor.receiveShadow = true;
+scene.add(floor);
+
+/* walls */
+const WALL = 29.5;
+box(60, 6, 1,  0, 0, -WALL, 0xff6b35);
+box(60, 6, 1,  0, 0,  WALL, 0x3b82f6);
+box(1, 6, 60, -WALL, 0, 0, 0x22c55e);
+box(1, 6, 60,  WALL, 0, 0, 0xa855f7);
+
+/* center stage + stairs */
+box(10, 1, 10, 0, 0, 0, 0x7c3aed);
+box(5, .34, 1.2, 0, 0, 6.6, 0xfbbf24);
+box(5, .67, 1.2, 0, 0, 7.8, 0xf59e0b);
+box(5, 1.0, 1.2, 0, 0, 9.0, 0xfbbf24);
+
+/* sky platform (reach it via bounce pads) */
+box(16, .6, 3, 0, 2.7, -12, 0x3b82f6);
+box(2, 3.3, 2, -9, 0, -12, 0x6366f1);
+box(2, 3.3, 2,  9, 0, -12, 0x6366f1);
+
+/* parkour cubes */
+box(2, 2, 2, -14, 0, 8, 0xef4444);
+box(2, 3, 2, -11, 0, 11, 0xef4444);
+box(2, 2, 2, 14, 0, 6, 0x14b8a6);
+box(2, 4, 2, 11.5, 0, 9, 0x14b8a6);
+box(3, 1.2, 3, -4, 0, 16, 0xf97316);
+
+/* bounce pads */
+const pads = [];
+function bouncePad(x, z){
+  const geo = new THREE.CylinderGeometry(1.3, 1.5, .3, 24);
+  const mat = new THREE.MeshStandardMaterial({ color:0x22ff88, emissive:0x22ff88, emissiveIntensity:.8, roughness:.4 });
+  const m = new THREE.Mesh(geo, mat);
+  m.position.set(x, .15, z);
+  m.receiveShadow = true;
+  scene.add(m);
+  pads.push({ x, z, r:1.4 });
+}
+bouncePad(-5, -12); bouncePad(5, -12); bouncePad(0, 18);
+
+/* bouncy balls */
+const balls = [];
+const ballColors = [0xff4757, 0x2ed573, 0x1e90ff, 0xffa502, 0xeccc68, 0x7bed9f, 0x70a1ff, 0xff6b81];
+for(let i = 0; i < 8; i++){
+  const r = .45 + Math.random() * .25;
+  const mesh = new THREE.Mesh(
+    new THREE.SphereGeometry(r, 24, 18),
+    new THREE.MeshStandardMaterial({ color:ballColors[i], roughness:.35 })
+  );
+  mesh.castShadow = true;
+  scene.add(mesh);
+  balls.push({
+    mesh, r,
+    pos: new THREE.Vector3((Math.random()-.5)*36, 3 + Math.random()*4, (Math.random()-.5)*36),
+    vel: new THREE.Vector3((Math.random()-.5)*6, 0, (Math.random()-.5)*6)
+  });
+}
+
+/* ---------- player ---------- */
+const pos = new THREE.Vector3(0, 0, 14);   // feet position
+const vel = new THREE.Vector3();
+let yaw = 0, pitch = 0, grounded = false;
+const keys = {};
+addEventListener('keydown', e => { keys[e.code] = true; if(e.code === 'Space') e.preventDefault(); });
+addEventListener('keyup',   e => { keys[e.code] = false; });
+addEventListener('resize', () => {
+  camera.aspect = innerWidth/innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+
+const overlay = document.getElementById('overlay');
+const hud = document.getElementById('hud');
+let locked = false;
+overlay.addEventListener('click', () => renderer.domElement.requestPointerLock());
+document.addEventListener('pointerlockchange', () => {
+  locked = document.pointerLockElement === renderer.domElement;
+  overlay.classList.toggle('hidden', locked);
+  hud.style.display = locked ? 'block' : 'none';
+});
+document.addEventListener('mousemove', e => {
+  if(!locked) return;
+  yaw   -= e.movementX * 0.0022;
+  pitch -= e.movementY * 0.0022;
+  pitch = Math.max(-1.45, Math.min(1.45, pitch));
+});
+
+function supportAt(x, z, feetY){
+  let s = 0;
+  for(const b of solids){
+    if(x > b.x0 - R && x < b.x1 + R && z > b.z0 - R && z < b.z1 + R &&
+       b.y1 <= feetY + 0.55 && b.y1 > s) s = b.y1;
+  }
+  return s;
+}
+function collideHoriz(){
+  for(const b of solids){
+    if(pos.y + 1.6 < b.y0 || pos.y > b.y1 - 0.35) continue;
+    const nx0 = b.x0 - R, nx1 = b.x1 + R, nz0 = b.z0 - R, nz1 = b.z1 + R;
+    if(pos.x > nx0 && pos.x < nx1 && pos.z > nz0 && pos.z < nz1){
+      const dxl = pos.x - nx0, dxr = nx1 - pos.x;
+      const dzl = pos.z - nz0, dzr = nz1 - pos.z;
+      const m = Math.min(dxl, dxr, dzl, dzr);
+      if(m === dxl) pos.x = nx0;
+      else if(m === dxr) pos.x = nx1;
+      else if(m === dzl) pos.z = nz0;
+      else pos.z = nz1;
+    }
+  }
+}
+
+/* ---------- main loop ---------- */
+const clock = new THREE.Clock();
+const fwd = new THREE.Vector3(), rgt = new THREE.Vector3();
+
+function tick(){
+  requestAnimationFrame(tick);
+  const dt = Math.min(clock.getDelta(), 0.05);
+
+  if(locked){
+    // look
+    camera.quaternion.setFromEuler(new THREE.Euler(pitch, yaw, 0, 'YXZ'));
+    // move
+    fwd.set(-Math.sin(yaw), 0, -Math.cos(yaw));
+    rgt.set( Math.cos(yaw), 0, -Math.sin(yaw));
+    const sprint = keys['ShiftLeft'] || keys['ShiftRight'];
+    const speed = sprint ? 10.5 : 6.5;
+    const ix = (keys['KeyD'] || keys['ArrowRight'] ? 1 : 0) - (keys['KeyA'] || keys['ArrowLeft'] ? 1 : 0);
+    const iz = (keys['KeyW'] || keys['ArrowUp'] ? 1 : 0) - (keys['KeyS'] || keys['ArrowDown'] ? 1 : 0);
+    const tx = (fwd.x * iz + rgt.x * ix) * speed;
+    const tz = (fwd.z * iz + rgt.z * ix) * speed;
+    const k = 1 - Math.pow(0.0001, dt);
+    vel.x += (tx - vel.x) * k;
+    vel.z += (tz - vel.z) * k;
+    // gravity + jump
+    vel.y -= 22 * dt;
+    if(grounded && keys['Space']){ vel.y = 8.6; grounded = false; }
+
+    pos.x += vel.x * dt; collideHoriz();
+    pos.z += vel.z * dt; collideHoriz();
+    pos.y += vel.y * dt;
+    const s = supportAt(pos.x, pos.z, pos.y);
+    if(pos.y <= s){ pos.y = s; vel.y = 0; grounded = true; }
+    else grounded = false;
+
+    // bounce pads
+    if(grounded){
+      for(const p of pads){
+        const dx = pos.x - p.x, dz = pos.z - p.z;
+        if(dx*dx + dz*dz < p.r * p.r){ vel.y = 16; grounded = false; break; }
+      }
+    }
+  }
+
+  // balls
+  for(const b of balls){
+    b.vel.y -= 20 * dt;
+    b.pos.addScaledVector(b.vel, dt);
+    if(b.pos.y < b.r){ b.pos.y = b.r; b.vel.y *= -0.72; b.vel.x *= .985; b.vel.z *= .985; }
+    if(b.pos.x < -WALL + 1 + b.r){ b.pos.x = -WALL + 1 + b.r; b.vel.x *= -0.8; }
+    if(b.pos.x >  WALL - 1 - b.r){ b.pos.x =  WALL - 1 - b.r; b.vel.x *= -0.8; }
+    if(b.pos.z < -WALL + 1 + b.r){ b.pos.z = -WALL + 1 + b.r; b.vel.z *= -0.8; }
+    if(b.pos.z >  WALL - 1 - b.r){ b.pos.z =  WALL - 1 - b.r; b.vel.z *= -0.8; }
+    // player kick
+    if(locked){
+      const dx = b.pos.x - pos.x, dz = b.pos.z - pos.z;
+      const d = Math.hypot(dx, dz);
+      if(d < b.r + 0.75 && Math.abs(b.pos.y - (pos.y + 0.9)) < 1.7 && d > 0.001){
+        b.vel.x += dx / d * 7 + vel.x * 0.5;
+        b.vel.z += dz / d * 7 + vel.z * 0.5;
+        b.vel.y += 2.5;
+      }
+    }
+    b.mesh.position.copy(b.pos);
+    b.mesh.rotation.x += b.vel.z * dt * 0.9;
+    b.mesh.rotation.z -= b.vel.x * dt * 0.9;
+  }
+
+  camera.position.set(pos.x, pos.y + 1.65, pos.z);
+  renderer.render(scene, camera);
+}
+tick();
+</script>
+</body>
+</html>
