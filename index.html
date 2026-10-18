@@ -154,7 +154,7 @@ scene.add(dorm, rec);
 
 /* ============================== MODELS (.glb) ============================== */
 const dormState = { ready:false, floorY:0, minX:-4, maxX:4, minZ:-4, maxZ:4, cx:0, cz:0 };
-const recState  = { ready:false, floorY:-2.5, spawnX:-5, spawnZ:-28, yaw:2.2 };
+const recState  = { ready:false, floorY:1.0, spawnX:-9, spawnZ:-15, yaw:Math.PI };
 const loadMgr = new THREE.LoadingManager();
 loadMgr.onProgress = (url, loaded, total)=>{
   $('loadfill').style.width = Math.round(loaded/total*100) + '%';
@@ -210,7 +210,7 @@ function loadRecCenter(){
       rec.add(model);
       // floor: raycast down from y=0 (under the upper walkways) at the spawn
       const rc = new THREE.Raycaster(
-        new THREE.Vector3(recState.spawnX, 0.0, recState.spawnZ),
+        new THREE.Vector3(recState.spawnX, 5.0, recState.spawnZ),
         new THREE.Vector3(0,-1,0));
       const hits = rc.intersectObject(model, true);
       recState.floorY = hits.length ? hits[0].point.y : -2.5;
@@ -238,7 +238,7 @@ const GRIDS = {
   dorm: makeGrid(-4.3,-5.9,0.25,38,40,
     "/4P/+AP////wD////8ABgAAHAAYAABwAGAAAcABgAAHAAYAABwAGAAAcAB////AAf///wAHgf/8AB4H//AAeB7/wAHgAD8AB4AA/AAYAAPwAGAAD8ABgAA//wfwAP/8H/+AMAB//gDAAf/4AwAH/+AMAB/AADAAfwAAwAH8AAMABvAADAAbwAHwAH8AB8AB/AAfAAfwAHwAH+AB8AB/4B/AAf+AfwAH/gH8AAf///AAH///wAB///8AB////AA=="),
   rec: makeGrid(-30.0,-38.0,0.5,84,112,
-    "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAH/+AAAAAAAAAAAH/+AAAAAAAAAAAH/+AAAAAAAAAAAHg+AAAAAAAAAAAHg+AAAAAAAAAAAHg+AAAAAAAAAAAHg+AAAAAAAAAAAHg+AAAAAAAAAAAHg+AAAAAAAAAAAHg+AAAAAAAAAAAHg+AAAAAAAAAAAHg+AAAAAAAAAAAHg+AAAAAAAAAAAHg+AAAAAAAAAAAHg+AAAAAAAAAAAHg+AAAOAAAAAAAHg/4AAOAAAAAAAHg///4OAAAAAAAHg///4AAAAAAAAHwD//4AAAAAAAAHwD//4AAAAAAAAHwAP4AAAAAAAAAHwAP4AAAAAAAA//wAP/8AAAAADw//AAP/8AAAAAD///AAP/8AAAAAD/wAAAP/4AAAAAD/wAAAA+P////AD/wAAAA+P////AD/wAAAAAP////AD/wAAAAAP////AD/wAAAAAP////AD/wAAAAAP////AD/wAAAAAP////AD/wAAAAAP////AD/wAAAAAAA/////4AAAAAAAAf////4AAAAAAAAf////4AAAAAAAAf////4AAAAAAAAf////4AA///wAAf////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////wH//+AB///////wH//+AB////wP/gH//+AH////////////////////////////////wD8AAHGAADx///wB8AAAAAAD////wB8AAA4AAD////wB4AAA4AAH////////////////////////////////wA8HAAAAA/////wA/HAAAAA/////wA/HAAAAA/////wAH/wAAAA/////wAH/+AAA//////wAD/+AAB//////wAD/+AAB//////wAD/+B55//////wAAf+B55//////wAAf+B55//////wAAf/AQ5//////wAAf/AA5//////wAAA/A/5//////wAAA/8/5//////wAAAD/////////wAAAD/////////wAAAAAAA//////wAAAAAAA//////wAAAAAAA//////wAAAAAAA//////wAAAAAAA//////wAAAAAAA//////wAAAAAAA//////wAAAAAAA//////wAAAAAAA//////wAAAAAAA/////"),
+    "AAAAAAAAAAAAAAAAAAAAAAAD8AAAAAAAAAAAP/8AAAAAAH//////8AAAAAAH//////8AAAAAAH//////8AAAAAAH//////8AAAAAAH//////8AAAAAAP//////8AAAAAAf//////8AAAAAAf//////8AAAAAAf/gAAP/8AAAAAAf/gAAP/8AAAAAAf/gAAAD8AAAAAAf/gAAAD8AAAAAAf/gAAAD8AAAAAAf/gAAAD8AAAAAAf/gAAAD8AAAAAAf/gAAAD8AAAAAAfwAAAAD////AAAfwAAAAD////AAAfwAAAAD////AAAfwAAAAD////AAAfwAAAAD////AAAfwAAAAD////AAAfwAAAAD////AAAf/////8////AAAf/////8AAAAAAAf/////wAAAAAAAf/////wAAAAAAAf/////wAAAAAAAf/////wAAAAAAA//////8AAAAADw//////8AAAAAD//8AAP//+AABAD/wAAAP/v+A4BAD/wAAAAAP+A79AD/wAAAAAP+A79AD/wAAAAAP+AD/AD/wAAAAAP+Af9AD/wAAAAAP+AcAAD/wAAAAAP+Ad+A//wAAAAAP+/5+A//wAAAAAP+/h/A//wAAAAAP+/x///+AAAAAAP+/////+AAAAAAP+//8//+AAAAAAP+/gA///AAAAAAP+/gA///AAAAAAP+/gA///AAAAAAP+/gA///AAAAAAP+/gA///AAAAAAP+/gA///AAAAAAP+/gA///AAAAAAP+/gA///AAAAAAP+/gA///AAAAAAP+/gA///AAB/+AP+/gA///AAB/+AP+/gA///AAB/+AP+/gA///AAB/+AP+/gA///AAB/+AP+/gA///AAB/+AP+/gA///AAB/+AP+/gP///AAB/+AP+/gP///AAB/+AP+//////wAB/+AP+//////wAB//AP+//+///wAB//AP+D/+///wAB/+AP+B/+///wAB/+AP+B/+///wAAAAAP+B/+///wAAAAAP+B/+///wAAAAAP+B/+///4AAAAAP+B/+///4AAAAAP+B/+///4AAAAAP+B//AAP4AAAAAP/h//AAP4AAAAAAHx4DAADwAAAAAADx4DAAD4AAAAAADx4DAAB4AAAAAADx4DAAB4AAAAAADx4DAAB4AAAAAADx4DAAB8AAAAAAAAADAAB8AAAAAAAAAAAAA8AAAAAAAAAAAAA8AAAAAAAAAAAAA+AAAAAAAAAAAAAHwAAAAAAAAAAAAH4AAAAAAAAAAAAD4AAAAAAAAAAAAD4AAAAAAAAAAAAD/gAAAAAAAAAAAAfgAAAAAAAAAAAAfgAAAAAAAAAAAAf+AAAAAAAAAAAAf+AAAAAAAAAAAAB+AAAAAAAAAAAAB/8AAAAAAAAAAAAD/4/+AAAAAAAAAD///+AAAAAAAAAAAAA+AAAAAAAAAAAAA+AAAAAAAAAAAAA+AAAAAAAAAAAAA+AAAAAAAAAAAAA+AAAAAAAAAAAAA+AAAAAAAAAAAAA+AAAAAAAAAAAAA+AAAAAAAAAAAAA/////AAAAAAAAA/////"),
 };
 function cellBlocked(g,ix,iz){
   if(ix<0||iz<0||ix>=g.nx||iz>=g.nz) return true;
