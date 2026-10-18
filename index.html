@@ -79,26 +79,18 @@ if (location.hostname.indexOf('github.io') !== -1) {
   #photo #ph-recnet { background:rgba(255,106,43,.22); border-color:rgba(255,106,43,.5); }
   #flash { position:fixed; inset:0; z-index:44; background:#fff; opacity:0; pointer-events:none; }
 
-  /* ---------- coming soon popup ---------- */
-  #soon { position:fixed; inset:0; z-index:50; display:flex; align-items:center; justify-content:center;
-    background:rgba(5,8,18,.6); backdrop-filter:blur(6px); }
-  #soon.hidden { display:none; }
-  .soon-card { text-align:center; padding:34px 40px; border-radius:22px; color:#fff;
-    background:linear-gradient(135deg, rgba(35,44,82,.96), rgba(20,26,48,.96));
-    border:1px solid rgba(255,106,43,.45);
-    box-shadow:0 0 44px rgba(255,106,43,.28), 0 20px 60px rgba(0,0,0,.6);
-    animation:soonpop .35s cubic-bezier(.2,1.4,.4,1); max-width:min(360px,86vw); }
-  @keyframes soonpop { from { transform:scale(.7); opacity:0; } to { transform:scale(1); opacity:1; } }
-  .soon-emoji { font-size:54px; animation:soonfloat 2.4s ease-in-out infinite; }
-  @keyframes soonfloat { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-9px); } }
-  .soon-card h3 { margin:12px 0 8px; font-size:27px; letter-spacing:2px;
-    background:linear-gradient(90deg,#ff8c42,#ff3d5a);
-    -webkit-background-clip:text; background-clip:text; color:transparent; }
-  .soon-card p { margin:0 0 20px; color:#aab4d4; font-size:14.5px; line-height:1.65; }
-  .soon-card button { padding:12px 36px; font-size:15px; font-weight:800; color:#fff; cursor:pointer;
-    background:linear-gradient(90deg,#ff8c42,#ff3d5a); border:none; border-radius:12px;
-    box-shadow:0 4px 18px rgba(255,80,60,.4); }
-  .soon-card button:active { transform:scale(.95); }
+  /* ---------- webhook setup ---------- */
+  #wh-setup { margin-top:12px; padding-top:12px; border-top:1px solid rgba(255,255,255,.1); }
+  #wh-setup.hidden { display:none; }
+  #wh-setup .wh-label { font-size:13.5px; font-weight:700; margin-bottom:8px; }
+  #wh-url { width:100%; box-sizing:border-box; padding:10px 12px; font-size:13px; color:#fff;
+    background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.15); border-radius:10px; }
+  #wh-setup .wh-btns { display:flex; gap:8px; margin-top:8px; }
+  #wh-setup .wh-btns button { flex:1; padding:10px; font-size:14px; font-weight:700; color:#fff;
+    background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.12);
+    border-radius:10px; cursor:pointer; }
+  #wh-setup #wh-save { background:rgba(88,101,242,.35); border-color:rgba(88,101,242,.6); }
+  #wh-setup .hint { margin-top:8px; font-size:11.5px; color:#8b8e99; line-height:1.5; }
 
   /* ---------- camera viewfinder ---------- */
   #cammode { position:fixed; inset:0; z-index:25; pointer-events:none; }
@@ -160,16 +152,17 @@ if (location.hostname.indexOf('github.io') !== -1) {
     <button id="ph-png">💾 Save as PNG</button>
     <button id="ph-close">✖ Close</button>
   </div>
-</div>
-<div id="flash"></div>
-<div id="soon" class="hidden">
-  <div class="soon-card">
-    <div class="soon-emoji">🚀</div>
-    <h3>Coming Soon</h3>
-    <p>RecNet photo sharing is on the way.<br>Your snaps will live here soon!</p>
-    <button id="soon-ok">Got it</button>
+  <div id="wh-setup" class="hidden">
+    <div class="wh-label">🔗 Link a Discord channel to post RecNet photos:</div>
+    <input id="wh-url" type="text" placeholder="https://discord.com/api/webhooks/…" spellcheck="false" autocomplete="off">
+    <div class="wh-btns">
+      <button id="wh-save">🔗 Connect &amp; Send</button>
+      <button id="wh-cancel">✖</button>
+    </div>
+    <div class="hint">In Discord: right-click your channel → Edit channel → Integrations → Webhooks → New Webhook → Copy Webhook URL. Saved only in this browser, never in the game's code.</div>
   </div>
 </div>
+<div id="flash"></div>
 <div id="cammode" class="hidden">
   <div class="vf-corner tl"></div><div class="vf-corner tr"></div>
   <div class="vf-corner bl"></div><div class="vf-corner br"></div>
@@ -479,9 +472,53 @@ function snapPhoto(){
   f.style.transition = 'none'; f.style.opacity = 0.85;
   requestAnimationFrame(()=>{ f.style.transition = 'opacity .45s'; f.style.opacity = 0; });
 }
-$('ph-recnet').onclick = ()=> $('soon').classList.remove('hidden');
-$('soon-ok').onclick = ()=> $('soon').classList.add('hidden');
-$('soon').addEventListener('click', e=>{ if(e.target.id === 'soon') $('soon').classList.add('hidden'); });
+/* ---------- Save to RecNet (Discord webhook) ---------- */
+const WH_KEY = 'recnova_recnet_webhook';
+function recnetWebhook(){ return localStorage.getItem(WH_KEY) || ''; }
+function validWebhook(u){ return /^https:\/\/(discord\.com|discordapp\.com)\/api\/webhooks\/\d\/.+/.test(u.trim()); }
+function dataURLtoBlob(dataURL){
+  const [head, data] = dataURL.split(',');
+  const mime = (head.match(/:(.*?);/)||[])[1] || 'image/png';
+  const bin = atob(data);
+  const arr = new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) arr[i] = bin.charCodeAt(i);
+  return new Blob([arr], { type:mime });
+}
+async function sendToRecNet(url){
+  const btn = $('ph-recnet');
+  btn.disabled = true;
+  const oldLabel = btn.textContent;
+  btn.textContent = '⏳ Sending…';
+  try{
+    const fd = new FormData();
+    fd.append('content', '📷 New RecNova photo!');
+    fd.append('file', dataURLtoBlob($('photo-img').src), 'recnova-photo.png');
+    const res = await fetch(url.trim(), { method:'POST', body:fd });
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    toast('📷 Sent to RecNet!');
+    $('photo').classList.add('hidden');
+    $('wh-setup').classList.add('hidden');
+  }catch(e){
+    toast('⚠️ Could not send — check the webhook URL');
+    localStorage.removeItem(WH_KEY);   // bad URL: ask again next time
+  }
+  btn.disabled = false;
+  btn.textContent = oldLabel;
+}
+$('ph-recnet').onclick = ()=>{
+  const url = recnetWebhook();
+  if(url){ sendToRecNet(url); return; }
+  $('wh-setup').classList.remove('hidden');
+  $('wh-url').focus();
+};
+$('wh-save').onclick = ()=>{
+  const u = $('wh-url').value.trim();
+  if(!validWebhook(u)){ toast('⚠️ That does not look like a Discord webhook URL'); return; }
+  localStorage.setItem(WH_KEY, u);
+  $('wh-setup').classList.add('hidden');
+  sendToRecNet(u);
+};
+$('wh-cancel').onclick = ()=> $('wh-setup').classList.add('hidden');
 $('ph-png').onclick = ()=>{
   const a = document.createElement('a');
   a.href = $('photo-img').src;
