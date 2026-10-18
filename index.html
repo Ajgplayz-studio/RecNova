@@ -636,12 +636,23 @@ $('w-create').onclick = ()=>{
 renderer.xr.enabled = true;
 document.body.appendChild(VRButton.createButton(renderer));
 const ctrl = [renderer.xr.getController(0), renderer.xr.getController(1)];
+const laserMat = new THREE.LineBasicMaterial({ color:0x7df9ff, transparent:true, opacity:.7 });
 ctrl.forEach(c=>{
   rig.add(c);
+  // laser pointer so you can aim at the 3D panels
+  const geo = new THREE.BufferGeometry().setFromPoints([ new THREE.Vector3(0,0,0), new THREE.Vector3(0,0,-4) ]);
+  c.add(new THREE.Line(geo, laserMat));
+  // little nub so you can see where your hands are
+  const nub = new THREE.Mesh(new THREE.SphereGeometry(0.045, 12, 10),
+    new THREE.MeshStandardMaterial({ color:0xff6a2b, roughness:.4 }));
+  c.add(nub);
+  c.visible = false;   // hidden until a VR session starts
   // three.js exposes the gamepad via the 'connected' event — ctrl.gamepad is undefined
   c.addEventListener('connected', e=>{ c.userData.gamepad = e.data.gamepad; });
   c.addEventListener('disconnected', ()=>{ c.userData.gamepad = null; });
 });
+renderer.xr.addEventListener('sessionstart', ()=> ctrl.forEach(c=> c.visible = true));
+renderer.xr.addEventListener('sessionend', ()=>{ ctrl.forEach(c=> c.visible = false); });
 function edgePressed(c, idx){
   const gp = c.userData.gamepad;
   if(!gp || !gp.buttons[idx]) return false;
