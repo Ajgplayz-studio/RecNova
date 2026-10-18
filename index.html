@@ -29,6 +29,23 @@ if (location.hostname.indexOf('github.io') !== -1) {
     background:linear-gradient(90deg,#ff8c42,#ff3d5a); transition:width .2s; }
   #loading .st { color:#8f9bb8; font-size:14px; }
 
+  /* ---------- username ---------- */
+  #username { position:fixed; inset:0; z-index:50; display:flex; align-items:center; justify-content:center;
+    background:radial-gradient(1000px 700px at 50% 20%, #232c52 0%, #141a30 55%, #0b0e1a 100%); }
+  #username.hidden { display:none; }
+  .un-card { text-align:center; color:#fff; width:min(320px,86vw); }
+  .un-card .logo { font-size:44px; font-weight:900; letter-spacing:2px; }
+  .un-card .logo span { color:#ff6a2b; }
+  .un-card p { color:#8f9bb8; font-size:16px; margin:10px 0 16px; }
+  #un-input { width:100%; box-sizing:border-box; padding:13px 16px; font-size:17px; text-align:center;
+    color:#fff; background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.18);
+    border-radius:14px; outline:none; }
+  #un-input:focus { border-color:#ff6a2b; }
+  #un-play { width:100%; margin-top:12px; padding:14px; font-size:17px; font-weight:800; color:#fff;
+    cursor:pointer; background:linear-gradient(90deg,#ff8c42,#ff3d5a); border:none; border-radius:14px;
+    box-shadow:0 4px 20px rgba(255,80,60,.4); }
+  #un-play:active { transform:scale(.97); }
+
   /* ---------- HUD ---------- */
   #hud { position:fixed; inset:0; z-index:20; pointer-events:none; }
   #cross { position:absolute; left:50%; top:50%; width:8px; height:8px; margin:-4px;
@@ -129,6 +146,14 @@ if (location.hostname.indexOf('github.io') !== -1) {
   <div class="logo">REC<span>NOVA</span></div>
   <div class="bar"><i id="loadfill"></i></div>
   <div class="st" id="loadst">Loading your dorm…</div>
+</div>
+<div id="username" class="hidden">
+  <div class="un-card">
+    <div class="logo">REC<span>NOVA</span></div>
+    <p>Who's playing?</p>
+    <input id="un-input" type="text" placeholder="Your name" maxlength="20" autocomplete="off" spellcheck="false">
+    <button id="un-play">▶ Play</button>
+  </div>
 </div>
 
 <div id="hud" class="hidden">
@@ -266,9 +291,28 @@ function checkAllLoaded(){
   if(!(dormState.ready && recState.ready)) return;
   gotoPlace('dorm');
   $('loading').classList.add('hidden');
+  askUsername();
+}
+/* ---------- username (asked every visit, never saved) ---------- */
+let playerName = 'Player';
+function askUsername(){
+  $('un-input').value = '';
+  $('username').classList.remove('hidden');
+  setTimeout(()=> $('un-input').focus(), 50);
+}
+function startWithName(){
+  const v = $('un-input').value.trim().replace(/[\r\n]/g, ' ');
+  playerName = v || 'Player';
+  $('username').classList.add('hidden');
+  for(const k in keys) keys[k] = false;
   ['hud','hint'].forEach(id=> $(id).classList.remove('hidden'));
   toast('Welcome to your dorm 🛏️');
 }
+$('un-play').onclick = startWithName;
+$('un-input').addEventListener('keydown', e=>{
+  e.stopPropagation();
+  if(e.key === 'Enter') startWithName();
+});
 function loadDorm(){
   const loader = new GLTFLoader(loadMgr);
   // dorm.glb lives in the repo root (Avery uploads it via GitHub web UI)
@@ -390,6 +434,8 @@ function gotoPlace(name){
 /* ============================== controls (PC + VR) ============================== */
 const keys = {};
 addEventListener('keydown', e=>{
+  if(e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;   // typing
+  if(!$('username').classList.contains('hidden')) return;
   if(e.code==='Tab'){ e.preventDefault(); toggleWatch(); return; }
   if(e.code==='KeyC'){ snapPhoto(); return; }
   keys[e.code] = true;
@@ -502,6 +548,10 @@ function dataURLtoBlob(dataURL){
   for(let i=0;i<bin.length;i++) arr[i] = bin.charCodeAt(i);
   return new Blob([arr], { type:mime });
 }
+function photoCaption(){
+  const t = new Date().toLocaleTimeString([], { hour:'numeric', minute:'2-digit' });
+  return `📷 made by ${playerName} at ${t}`;
+}
 async function sendToRecNet(url){
   const btn = $('ph-recnet');
   btn.disabled = true;
@@ -509,7 +559,7 @@ async function sendToRecNet(url){
   btn.textContent = '⏳ Sending…';
   try{
     const fd = new FormData();
-    fd.append('content', '📷 New RecNova photo!');
+    fd.append('content', photoCaption());
     fd.append('file', dataURLtoBlob($('photo-img').src), 'recnova-photo.png');
     const res = await fetch(url.trim(), { method:'POST', body:fd });
     if(!res.ok) throw new Error('HTTP '+res.status);
