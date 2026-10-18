@@ -154,7 +154,7 @@ scene.add(dorm, rec);
 
 /* ============================== MODELS (.glb) ============================== */
 const dormState = { ready:false, floorY:0, minX:-4, maxX:4, minZ:-4, maxZ:4, cx:0, cz:0 };
-const recState  = { ready:false, floorY:-2.5, spawnX:8.75, spawnZ:-23, yaw:2.2 };
+const recState  = { ready:false, floorY:-2.5, spawnX:-5, spawnZ:-28, yaw:2.2 };
 const loadMgr = new THREE.LoadingManager();
 loadMgr.onProgress = (url, loaded, total)=>{
   $('loadfill').style.width = Math.round(loaded/total*100) + '%';
