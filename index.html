@@ -75,7 +75,8 @@ if (location.hostname.indexOf('github.io') !== -1) {
   #photo .ph-btns button { flex:1; padding:12px; font-size:15px; font-weight:700; color:#fff;
     background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.12);
     border-radius:12px; cursor:pointer; }
-  #photo #ph-save { background:rgba(80,200,120,.25); border-color:rgba(80,200,120,.5); }
+  #photo #ph-png { background:rgba(80,200,120,.25); border-color:rgba(80,200,120,.5); }
+  #photo #ph-recnet { background:rgba(255,106,43,.22); border-color:rgba(255,106,43,.5); }
   #flash { position:fixed; inset:0; z-index:44; background:#fff; opacity:0; pointer-events:none; }
 
   /* ---------- camera viewfinder ---------- */
@@ -134,7 +135,8 @@ if (location.hostname.indexOf('github.io') !== -1) {
   <h3>📷 Photo</h3>
   <img id="photo-img" alt="your photo">
   <div class="ph-btns">
-    <button id="ph-save">💾 Save</button>
+    <button id="ph-recnet">🌐 Save to RecNet</button>
+    <button id="ph-png">💾 Save as PNG</button>
     <button id="ph-close">✖ Close</button>
   </div>
 </div>
@@ -448,7 +450,8 @@ function snapPhoto(){
   f.style.transition = 'none'; f.style.opacity = 0.85;
   requestAnimationFrame(()=>{ f.style.transition = 'opacity .45s'; f.style.opacity = 0; });
 }
-$('ph-save').onclick = ()=>{
+$('ph-recnet').onclick = ()=> alert('coming soon');
+$('ph-png').onclick = ()=>{
   const a = document.createElement('a');
   a.href = $('photo-img').src;
   a.download = 'recnova-photo.png';
