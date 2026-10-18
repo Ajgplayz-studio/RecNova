@@ -552,17 +552,20 @@ function photoCaption(){
   const t = new Date().toLocaleTimeString([], { hour:'numeric', minute:'2-digit' });
   return `📷 made by ${playerName} at ${t}`;
 }
+async function postPhoto(url, dataURL){
+  const fd = new FormData();
+  fd.append('content', photoCaption());
+  fd.append('file', dataURLtoBlob(dataURL), 'recnova-photo.png');
+  const res = await fetch(url.trim(), { method:'POST', body:fd });
+  if(!res.ok) throw new Error('HTTP '+res.status);
+}
 async function sendToRecNet(url){
   const btn = $('ph-recnet');
   btn.disabled = true;
   const oldLabel = btn.textContent;
   btn.textContent = '⏳ Sending…';
   try{
-    const fd = new FormData();
-    fd.append('content', photoCaption());
-    fd.append('file', dataURLtoBlob($('photo-img').src), 'recnova-photo.png');
-    const res = await fetch(url.trim(), { method:'POST', body:fd });
-    if(!res.ok) throw new Error('HTTP '+res.status);
+    await postPhoto(url, $('photo-img').src);
     toast('📷 Sent to RecNet!');
     $('photo').classList.add('hidden');
     $('wh-setup').classList.add('hidden');
@@ -610,8 +613,8 @@ function makeRoom(){
   ceil.rotation.x = Math.PI/2; ceil.position.y = 4; g.add(ceil);
   return g;
 }
-$('w-create').onclick = ()=>{
-  if(!makerPenEquipped){ toast('⚠️ Equip the Maker Pen from your backpack first!'); return; }
+function createRoom(){
+  if(!makerPenEquipped){ toast('⚠️ Equip the Maker Pen from your backpack first!'); return false; }
   roomCount++;
   const key = 'room'+roomCount;
   const label = '🏠 My Room' + (roomCount>1 ? ' '+roomCount : '');
@@ -622,15 +625,223 @@ $('w-create').onclick = ()=>{
     spawn:{ x:0, y:0, z:0, yaw:0 }, bounds:5 };
   renderWatchPlaces();
   gotoPlace(key);
-  toggleWatch();
   toast('🏠 Room created!');
+  return true;
+}
+$('w-create').onclick = ()=>{
+  if(createRoom()) toggleWatch();
 };
 
 /* VR */
 renderer.xr.enabled = true;
 document.body.appendChild(VRButton.createButton(renderer));
 const ctrl = [renderer.xr.getController(0), renderer.xr.getController(1)];
-ctrl.forEach(c=> rig.add(c));
+ctrl.forEach(c=>{
+  rig.add(c);
+  // three.js exposes the gamepad via the 'connected' event — ctrl.gamepad is undefined
+  c.addEventListener('connected', e=>{ c.userData.gamepad = e.data.gamepad; });
+  c.addEventListener('disconnected', ()=>{ c.userData.gamepad = null; });
+});
+function edgePressed(c, idx){
+  const gp = c.userData.gamepad;
+  if(!gp || !gp.buttons[idx]) return false;
+  const now = !!gp.buttons[idx].pressed;
+  const was = c.userData['eb'+idx] || false;
+  c.userData['eb'+idx] = now;
+  return now && !was;
+}
+
+/* ============================== VR watch menu + camera (3D panels) ============================== */
+function positionPanel(p){
+  const cp = new THREE.Vector3(); camera.getWorldPosition(cp);
+  const d = new THREE.Vector3(); camera.getWorldDirection(d); d.y = 0;
+  if(d.lengthSq() < 1e-6) d.set(0, 0, -1); d.normalize();
+  p.position.copy(cp).addScaledVector(d, 1.6);
+  p.position.y = cp.y - 0.15;
+  p.lookAt(cp.x, p.position.y, cp.z);
+}
+/* --- watch panel --- */
+const watchCanvas = document.createElement('canvas');
+watchCanvas.width = 512; watchCanvas.height = 700;
+const watchCtx = watchCanvas.getContext('2d');
+const watchTex = new THREE.CanvasTexture(watchCanvas);
+const watchMesh = new THREE.Mesh(new THREE.PlaneGeometry(1.15, 1.575),
+  new THREE.MeshBasicMaterial({ map:watchTex, transparent:true, side:THREE.DoubleSide }));
+const watchPanel = new THREE.Group();
+watchPanel.add(watchMesh);
+watchPanel.visible = false;
+scene.add(watchPanel);
+let watchHits = [];
+function vrBtn(c, x, y, w, h, label, kind, hot){
+  c.fillStyle = hot ? 'rgba(255,106,43,.45)' : 'rgba(255,255,255,.1)';
+  c.beginPath(); c.roundRect(x, y, w, h, 12); c.fill();
+  c.fillStyle = '#fff'; c.font = '22px sans-serif'; c.textAlign = 'center';
+  c.fillText(label, x + w/2, y + 35);
+  watchHits.push({ x, y, w, h, kind });
+}
+function drawVRWatch(){
+  const c = watchCtx;
+  c.clearRect(0, 0, 512, 700);
+  c.fillStyle = 'rgba(12,15,28,.95)';
+  c.beginPath(); c.roundRect(0, 0, 512, 700, 28); c.fill();
+  c.textAlign = 'center';
+  c.fillStyle = '#ffb27a'; c.font = 'bold 30px sans-serif';
+  c.fillText('⌚ WATCH', 256, 46);
+  watchHits = [];
+  let y = 66;
+  c.fillStyle = '#8b8e99'; c.font = 'bold 17px sans-serif'; c.textAlign = 'left';
+  c.fillText('PLACES', 20, y); y += 10;
+  for(const key of Object.keys(PLACES)){
+    vrBtn(c, 16, y, 480, 50, PLACES[key].label, 'go:'+key, key === place);
+    y += 58;
+  }
+  y += 4;
+  c.fillStyle = '#8b8e99'; c.font = 'bold 17px sans-serif'; c.textAlign = 'left';
+  c.fillText('BACKPACK', 20, y); y += 10;
+  vrBtn(c, 16, y, 480, 50, '🖊️ Maker Pen: ' + (makerPenEquipped ? 'ON' : 'OFF'), 'pen', makerPenEquipped);
+  y += 58;
+  vrBtn(c, 16, y, 480, 50, '📷 Camera: ' + (cameraEquipped ? 'ON' : 'OFF'), 'cam', cameraEquipped);
+  y += 58;
+  if(makerPenEquipped){ vrBtn(c, 16, y, 480, 50, '➕ Create Room', 'create', false); y += 58; }
+  if(cameraEquipped){ vrBtn(c, 16, y, 480, 56, '📷 TAKE PHOTO', 'snap', true); y += 64; }
+  c.fillStyle = '#8b8e99'; c.font = '18px sans-serif'; c.textAlign = 'center';
+  c.fillText('B = close · trigger = press', 256, 676);
+  watchTex.needsUpdate = true;
+}
+function toggleVRWatch(){
+  watchPanel.visible = !watchPanel.visible;
+  if(watchPanel.visible){ drawVRWatch(); positionPanel(watchPanel); }
+}
+function vrWatchPress(kind){
+  if(kind.startsWith('go:')){ gotoPlace(kind.slice(3)); watchPanel.visible = false; }
+  else if(kind === 'pen'){ $('bp-pen').onclick(); drawVRWatch(); }
+  else if(kind === 'cam'){ setCameraEquipped(!cameraEquipped); drawVRWatch(); }
+  else if(kind === 'create'){ if(createRoom()) watchPanel.visible = false; drawVRWatch(); }
+  else if(kind === 'snap'){ vrSnapPhoto(); }
+}
+/* --- photo panel --- */
+const photoCanvas = document.createElement('canvas');
+photoCanvas.width = 512; photoCanvas.height = 600;
+const photoCtx = photoCanvas.getContext('2d');
+const photoTex = new THREE.CanvasTexture(photoCanvas);
+const photoMesh = new THREE.Mesh(new THREE.PlaneGeometry(1.15, 1.35),
+  new THREE.MeshBasicMaterial({ map:photoTex, transparent:true, side:THREE.DoubleSide }));
+const photoPanel = new THREE.Group();
+photoPanel.add(photoMesh);
+photoPanel.visible = false;
+scene.add(photoPanel);
+let photoHits = [], vrPhotoImg = null, vrPhotoURL = null;
+function drawVRPhoto(status){
+  const c = photoCtx;
+  c.clearRect(0, 0, 512, 600);
+  c.fillStyle = 'rgba(12,15,28,.95)';
+  c.beginPath(); c.roundRect(0, 0, 512, 600, 28); c.fill();
+  c.textAlign = 'center';
+  c.fillStyle = '#ffb27a'; c.font = 'bold 30px sans-serif';
+  c.fillText('📷 PHOTO', 256, 46);
+  photoHits = [];
+  if(vrPhotoImg){
+    const s = 380;
+    c.drawImage(vrPhotoImg, 256 - s/2, 66, s, s);
+  }
+  const y = 478, h = 56;
+  c.fillStyle = 'rgba(34,197,94,.4)';
+  c.beginPath(); c.roundRect(16, y, 232, h, 12); c.fill();
+  c.fillStyle = '#fff'; c.font = '21px sans-serif';
+  c.fillText('🌐 RecNet', 132, y + 36);
+  photoHits.push({ x:16, y, w:232, h, kind:'send' });
+  c.fillStyle = 'rgba(255,255,255,.12)';
+  c.beginPath(); c.roundRect(264, y, 232, h, 12); c.fill();
+  c.fillStyle = '#fff';
+  c.fillText('✖ Close', 380, y + 36);
+  photoHits.push({ x:264, y, w:232, h, kind:'close' });
+  if(status){
+    c.fillStyle = '#ffd9a8'; c.font = '19px sans-serif';
+    c.fillText(status, 256, 572);
+  }
+  photoTex.needsUpdate = true;
+}
+function showVRPhoto(dataURL){
+  vrPhotoURL = dataURL;
+  const img = new Image();
+  img.onload = ()=>{
+    vrPhotoImg = img;
+    drawVRPhoto('');
+    positionPanel(photoPanel);
+    photoPanel.visible = true;
+    watchPanel.visible = false;
+  };
+  img.src = dataURL;
+}
+async function vrSendPhoto(){
+  if(recnetVisibility() !== 'public'){ drawVRPhoto('🔒 Private mode — post from PC'); return; }
+  drawVRPhoto('⏳ Sending…');
+  try{
+    await postPhoto(WH_DEFAULT, vrPhotoURL);
+    drawVRPhoto('✓ Sent to RecNet!');
+  }catch(e){ drawVRPhoto('⚠️ Send failed'); }
+}
+function vrPhotoPress(kind){
+  if(kind === 'send') vrSendPhoto();
+  else if(kind === 'close'){ photoPanel.visible = false; vrPhotoImg = null; vrPhotoURL = null; }
+}
+const vrRay = new THREE.Raycaster();
+function vrPanelTrigger(c){
+  const o = new THREE.Vector3(), d = new THREE.Vector3();
+  c.getWorldPosition(o); c.getWorldDirection(d); d.negate();
+  vrRay.set(o, d);
+  const targets = [];
+  if(watchPanel.visible) targets.push({ mesh:watchMesh, hits:watchHits, w:512, h:700, isWatch:true });
+  if(photoPanel.visible) targets.push({ mesh:photoMesh, hits:photoHits, w:512, h:600, isWatch:false });
+  for(const t of targets){
+    const hit = vrRay.intersectObject(t.mesh, false)[0];
+    if(!hit) continue;
+    const px = hit.uv.x * t.w, py = (1 - hit.uv.y) * t.h;
+    for(const hh of t.hits){
+      if(px >= hh.x && px <= hh.x + hh.w && py >= hh.y && py <= hh.y + hh.h){
+        if(t.isWatch) vrWatchPress(hh.kind); else vrPhotoPress(hh.kind);
+        return;
+      }
+    }
+  }
+}
+/* --- VR photo capture: render head pose to a target (XR framebuffer can't be read) --- */
+function captureVRPhoto(){
+  try{
+    const head = renderer.xr.getCamera();
+    const pc = new THREE.PerspectiveCamera(72, 1, 0.05, 400);
+    head.getWorldPosition(pc.position);
+    head.getWorldQuaternion(pc.quaternion);
+    pc.updateMatrixWorld();
+    const S2 = 1024;
+    const rt = new THREE.WebGLRenderTarget(S2, S2);
+    rt.texture.colorSpace = THREE.SRGBColorSpace;
+    const wWas = watchPanel.visible, pWas = photoPanel.visible;
+    watchPanel.visible = false; photoPanel.visible = false;
+    const xrWas = renderer.xr.enabled;
+    renderer.xr.enabled = false;
+    renderer.setRenderTarget(rt);
+    renderer.render(scene, pc);
+    const buf = new Uint8Array(S2 * S2 * 4);
+    renderer.readRenderTargetPixels(rt, 0, 0, S2, S2, buf);
+    renderer.setRenderTarget(null);
+    renderer.xr.enabled = xrWas;
+    watchPanel.visible = wWas; photoPanel.visible = pWas;
+    rt.dispose();
+    const cv = document.createElement('canvas'); cv.width = cv.height = S2;
+    const ctx = cv.getContext('2d');
+    const img = ctx.createImageData(S2, S2);
+    const row = S2 * 4;
+    for(let y = 0; y < S2; y++) img.data.set(buf.subarray((S2 - 1 - y) * row, (S2 - y) * row), y * row);
+    ctx.putImageData(img, 0, 0);
+    return cv.toDataURL('image/png');
+  }catch(e){ console.error('VR capture failed', e); return null; }
+}
+function vrSnapPhoto(){
+  if(!cameraEquipped || !renderer.xr.isPresenting) return;
+  const url = captureVRPhoto();
+  if(url) showVRPhoto(url);
+}
 
 /* ============================== loop ============================== */
 const clock = new THREE.Clock();
@@ -667,7 +878,7 @@ function stepPlayer(dt){
 }
 function stepVR(dt){
   if(!renderer.xr.isPresenting) return;
-  const gp = ctrl[0]?.gamepad;
+  const gp = ctrl[0].userData.gamepad;
   if(gp){
     fwd.set(-Math.sin(yaw),0,-Math.cos(yaw)); rgt.set(-fwd.z,0,fwd.x);
     const mv = new THREE.Vector3()
@@ -684,11 +895,20 @@ function stepVR(dt){
       } else rig.position.add(step);
     }
   }
-  const gp2 = ctrl[1]?.gamepad;
+  const gp2 = ctrl[1].userData.gamepad;
   if(gp2){
     const x = gp2.axes[2]||0;
     if(Math.abs(x) > .7 && !stepVR._t){ yaw -= Math.sign(x)*Math.PI/6; stepVR._t = true; }
     if(Math.abs(x) < .3) stepVR._t = false;
+  }
+  // B button (index 5): VR watch menu
+  if(edgePressed(ctrl[1], 5)){
+    if(photoPanel.visible) photoPanel.visible = false;
+    else toggleVRWatch();
+  }
+  // trigger (index 0): press buttons on the 3D panels
+  if((watchPanel.visible || photoPanel.visible) && edgePressed(ctrl[1], 0)){
+    vrPanelTrigger(ctrl[1]);
   }
 }
 function animate(){
