@@ -78,6 +78,25 @@ if (location.hostname.indexOf('github.io') !== -1) {
   #photo #ph-save { background:rgba(80,200,120,.25); border-color:rgba(80,200,120,.5); }
   #flash { position:fixed; inset:0; z-index:44; background:#fff; opacity:0; pointer-events:none; }
 
+  /* ---------- camera viewfinder ---------- */
+  #cammode { position:fixed; inset:0; z-index:25; pointer-events:none; }
+  #cammode.hidden { display:none; }
+  .vf-corner { position:absolute; width:46px; height:46px; border:3px solid rgba(255,255,255,.85); }
+  .vf-corner.tl { top:20px; left:20px; border-right:none; border-bottom:none; border-top-left-radius:10px; }
+  .vf-corner.tr { top:20px; right:20px; border-left:none; border-bottom:none; border-top-right-radius:10px; }
+  .vf-corner.bl { bottom:20px; left:20px; border-right:none; border-top:none; border-bottom-left-radius:10px; }
+  .vf-corner.br { bottom:20px; right:20px; border-left:none; border-top:none; border-bottom-right-radius:10px; }
+  .vf-top { position:absolute; top:28px; left:50%; transform:translateX(-50%); color:#fff;
+    font-weight:800; font-size:15px; letter-spacing:2px; text-shadow:0 2px 6px rgba(0,0,0,.7); }
+  #cam-snap { position:absolute; bottom:36px; left:50%; transform:translateX(-50%);
+    width:78px; height:78px; border-radius:50%; font-size:34px; cursor:pointer;
+    background:rgba(255,255,255,.14); border:3px solid #fff; pointer-events:auto;
+    box-shadow:0 4px 18px rgba(0,0,0,.5); }
+  #cam-snap:active { transform:translateX(-50%) scale(.92); }
+  #cam-away { position:absolute; bottom:52px; right:26px; pointer-events:auto; cursor:pointer;
+    padding:10px 16px; font-size:14px; font-weight:700; color:#fff;
+    background:rgba(10,13,25,.75); border:1px solid rgba(255,255,255,.2); border-radius:12px; }
+
   #toast { position:fixed; z-index:40; bottom:26px; left:50%; transform:translateX(-50%);
     background:rgba(10,13,25,.9); color:#ffd9a8; font-size:14px; padding:10px 20px;
     border-radius:999px; border:1px solid rgba(255,255,255,.1); opacity:0; transition:opacity .3s;
@@ -120,6 +139,13 @@ if (location.hostname.indexOf('github.io') !== -1) {
   </div>
 </div>
 <div id="flash"></div>
+<div id="cammode" class="hidden">
+  <div class="vf-corner tl"></div><div class="vf-corner tr"></div>
+  <div class="vf-corner bl"></div><div class="vf-corner br"></div>
+  <div class="vf-top">📷 CAMERA</div>
+  <button id="cam-snap" title="Take photo">📷</button>
+  <button id="cam-away">✖ Put away</button>
+</div>
 <div id="toast"></div>
 <div id="hint" class="hidden"><b>WASD</b> move · <b>mouse</b> look · <b>Tab</b> watch · <b>Space</b> jump</div>
 
@@ -386,12 +412,17 @@ $('bp-pen').onclick = ()=>{
 };
 /* ---------- camera: snap photos ---------- */
 let cameraEquipped = false, AC = null;
-$('bp-cam').onclick = ()=>{
-  cameraEquipped = !cameraEquipped;
-  $('bp-cam').textContent = cameraEquipped ? 'Unequip' : 'Use';
-  $('bp-cam').classList.toggle('equipped', cameraEquipped);
-  toast(cameraEquipped ? '📷 Camera equipped! Press C to snap a photo' : '📷 Camera put away');
-};
+function setCameraEquipped(on){
+  cameraEquipped = on;
+  $('bp-cam').textContent = on ? 'Unequip' : 'Use';
+  $('bp-cam').classList.toggle('equipped', on);
+  $('cammode').classList.toggle('hidden', !on);
+  if(on) document.exitPointerLock?.();
+  toast(on ? '📷 Camera equipped!' : '📷 Camera put away');
+}
+$('bp-cam').onclick = ()=> setCameraEquipped(!cameraEquipped);
+$('cam-away').onclick = ()=> setCameraEquipped(false);
+$('cam-snap').onclick = ()=> snapPhoto();
 function shutter(){
   try{
     AC = AC || new (window.AudioContext||window.webkitAudioContext)();
