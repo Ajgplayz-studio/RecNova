@@ -7,6 +7,7 @@ if (location.hostname.indexOf('github.io') !== -1) {
 }
 </script>
 <meta charset="utf-8">
+<link rel="icon" href="data:,">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>RecNova</title>
 <style>
@@ -159,9 +160,8 @@ function loadDorm(){
     $('loadfill').style.width = Math.round(loaded/total*100) + '%';
   };
   const loader = new GLTFLoader(mgr);
-  // Avery's dorm .glb, hosted on their Google Drive (CORS-open)
-  const DORM_URL = 'https://drive.usercontent.google.com/download?id=1eEj9xTQo9y_jjUiyB5YfUMtfgo4l_qGz&export=download';
-  loader.load(DORM_URL,
+  // dorm.glb lives in the repo root (Avery uploads it via GitHub web UI)
+  loader.load('dorm.glb',
     (gltf)=>{
       const model = gltf.scene;
       // perf: 1395 meshes — no shadow casting on the dorm, receive only
@@ -174,12 +174,16 @@ function loadDorm(){
       dormState.cx = ctr.x; dormState.cz = ctr.z;
       dormState.minX = bb.min.x + .45; dormState.maxX = bb.max.x - .45;
       dormState.minZ = bb.min.z + .45; dormState.maxZ = bb.max.z - .45;
-      // floor: raycast down through the room center
+      // floor: raycast down from INSIDE the room (below the 2.52 ceiling)
+      // at the spawn point — first hit is the surface we stand on.
+      // (Raycasting from above the model hits the roof first — wrong.)
+      const spawnX = -3.0, spawnZ = 3.5;
       const rc = new THREE.Raycaster(
-        new THREE.Vector3(ctr.x, bb.max.y + 1, ctr.z),
+        new THREE.Vector3(spawnX, 2.0, spawnZ),
         new THREE.Vector3(0,-1,0));
       const hits = rc.intersectObject(model, true);
-      dormState.floorY = hits.length ? hits[0].point.y : bb.min.y;
+      dormState.floorY = hits.length ? hits[0].point.y : -1.5;
+      dormState.spawnX = spawnX; dormState.spawnZ = spawnZ;
       dormState.ready = true;
       gotoPlace('dorm');
       $('loading').classList.add('hidden');
@@ -241,8 +245,8 @@ function gotoPlace(name){
   place = name;
   PLACES[place].group.visible = true;
   if(name==='dorm' && dormState.ready){
-    rig.position.set(dormState.cx, dormState.floorY, dormState.cz + 2.5);
-    yaw = 0; pitch = 0;   // face -z, toward room center
+    rig.position.set(dormState.spawnX, dormState.floorY, dormState.spawnZ);
+    yaw = -0.685; pitch = 0;   // face the room center from the SW corner
   } else {
     rig.position.set(0, 0, 10);
     yaw = Math.PI; pitch = 0;
