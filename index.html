@@ -79,6 +79,27 @@ if (location.hostname.indexOf('github.io') !== -1) {
   #photo #ph-recnet { background:rgba(255,106,43,.22); border-color:rgba(255,106,43,.5); }
   #flash { position:fixed; inset:0; z-index:44; background:#fff; opacity:0; pointer-events:none; }
 
+  /* ---------- coming soon popup ---------- */
+  #soon { position:fixed; inset:0; z-index:50; display:flex; align-items:center; justify-content:center;
+    background:rgba(5,8,18,.6); backdrop-filter:blur(6px); }
+  #soon.hidden { display:none; }
+  .soon-card { text-align:center; padding:34px 40px; border-radius:22px; color:#fff;
+    background:linear-gradient(135deg, rgba(35,44,82,.96), rgba(20,26,48,.96));
+    border:1px solid rgba(255,106,43,.45);
+    box-shadow:0 0 44px rgba(255,106,43,.28), 0 20px 60px rgba(0,0,0,.6);
+    animation:soonpop .35s cubic-bezier(.2,1.4,.4,1); max-width:min(360px,86vw); }
+  @keyframes soonpop { from { transform:scale(.7); opacity:0; } to { transform:scale(1); opacity:1; } }
+  .soon-emoji { font-size:54px; animation:soonfloat 2.4s ease-in-out infinite; }
+  @keyframes soonfloat { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-9px); } }
+  .soon-card h3 { margin:12px 0 8px; font-size:27px; letter-spacing:2px;
+    background:linear-gradient(90deg,#ff8c42,#ff3d5a);
+    -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .soon-card p { margin:0 0 20px; color:#aab4d4; font-size:14.5px; line-height:1.65; }
+  .soon-card button { padding:12px 36px; font-size:15px; font-weight:800; color:#fff; cursor:pointer;
+    background:linear-gradient(90deg,#ff8c42,#ff3d5a); border:none; border-radius:12px;
+    box-shadow:0 4px 18px rgba(255,80,60,.4); }
+  .soon-card button:active { transform:scale(.95); }
+
   /* ---------- camera viewfinder ---------- */
   #cammode { position:fixed; inset:0; z-index:25; pointer-events:none; }
   #cammode.hidden { display:none; }
@@ -141,6 +162,14 @@ if (location.hostname.indexOf('github.io') !== -1) {
   </div>
 </div>
 <div id="flash"></div>
+<div id="soon" class="hidden">
+  <div class="soon-card">
+    <div class="soon-emoji">🚀</div>
+    <h3>Coming Soon</h3>
+    <p>RecNet photo sharing is on the way.<br>Your snaps will live here soon!</p>
+    <button id="soon-ok">Got it</button>
+  </div>
+</div>
 <div id="cammode" class="hidden">
   <div class="vf-corner tl"></div><div class="vf-corner tr"></div>
   <div class="vf-corner bl"></div><div class="vf-corner br"></div>
@@ -450,7 +479,9 @@ function snapPhoto(){
   f.style.transition = 'none'; f.style.opacity = 0.85;
   requestAnimationFrame(()=>{ f.style.transition = 'opacity .45s'; f.style.opacity = 0; });
 }
-$('ph-recnet').onclick = ()=> alert('coming soon');
+$('ph-recnet').onclick = ()=> $('soon').classList.remove('hidden');
+$('soon-ok').onclick = ()=> $('soon').classList.add('hidden');
+$('soon').addEventListener('click', e=>{ if(e.target.id === 'soon') $('soon').classList.add('hidden'); });
 $('ph-png').onclick = ()=>{
   const a = document.createElement('a');
   a.href = $('photo-img').src;
