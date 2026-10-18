@@ -91,6 +91,8 @@ if (location.hostname.indexOf('github.io') !== -1) {
     border-radius:10px; cursor:pointer; }
   #wh-setup #wh-save { background:rgba(88,101,242,.35); border-color:rgba(88,101,242,.6); }
   #wh-setup .hint { margin-top:8px; font-size:11.5px; color:#8b8e99; line-height:1.5; }
+  .wh-change { display:block; margin:10px auto 0; background:none; border:none; color:#8b8e99;
+    font-size:12px; cursor:pointer; text-decoration:underline; }
 
   /* ---------- camera viewfinder ---------- */
   #cammode { position:fixed; inset:0; z-index:25; pointer-events:none; }
@@ -152,14 +154,15 @@ if (location.hostname.indexOf('github.io') !== -1) {
     <button id="ph-png">💾 Save as PNG</button>
     <button id="ph-close">✖ Close</button>
   </div>
+  <button id="wh-change" class="wh-change">🔗 Change RecNet channel</button>
   <div id="wh-setup" class="hidden">
-    <div class="wh-label">🔗 Link a Discord channel to post RecNet photos:</div>
+    <div class="wh-label">🔗 Override the RecNet Discord channel (blank = default):</div>
     <input id="wh-url" type="text" placeholder="https://discord.com/api/webhooks/…" spellcheck="false" autocomplete="off">
     <div class="wh-btns">
-      <button id="wh-save">🔗 Connect &amp; Send</button>
+      <button id="wh-save">🔗 Save</button>
       <button id="wh-cancel">✖</button>
     </div>
-    <div class="hint">In Discord: right-click your channel → Edit channel → Integrations → Webhooks → New Webhook → Copy Webhook URL. Saved only in this browser, never in the game's code.</div>
+    <div class="hint">In Discord: right-click your channel → Edit channel → Integrations → Webhooks → New Webhook → Copy Webhook URL. Overrides are saved only in this browser.</div>
   </div>
 </div>
 <div id="flash"></div>
@@ -474,7 +477,8 @@ function snapPhoto(){
 }
 /* ---------- Save to RecNet (Discord webhook) ---------- */
 const WH_KEY = 'recnova_recnet_webhook';
-function recnetWebhook(){ return localStorage.getItem(WH_KEY) || ''; }
+const WH_DEFAULT = 'https://discord.com/api/webhooks/1561465066677739600/3PEkieHwFLSVuvZSN0Vn2MHcmIlt_bpw1Zy5Lj58fYKpfekPXOekC9dqC515ZDav3fpS';
+function recnetWebhook(){ return localStorage.getItem(WH_KEY) || WH_DEFAULT; }
 function validWebhook(u){ return /^https:\/\/(discord\.com|discordapp\.com)\/api\/webhooks\/\d\/.+/.test(u.trim()); }
 function dataURLtoBlob(dataURL){
   const [head, data] = dataURL.split(',');
@@ -505,18 +509,23 @@ async function sendToRecNet(url){
   btn.disabled = false;
   btn.textContent = oldLabel;
 }
-$('ph-recnet').onclick = ()=>{
-  const url = recnetWebhook();
-  if(url){ sendToRecNet(url); return; }
-  $('wh-setup').classList.remove('hidden');
-  $('wh-url').focus();
+$('ph-recnet').onclick = ()=> sendToRecNet(recnetWebhook());
+$('wh-change').onclick = ()=>{
+  $('wh-url').value = localStorage.getItem(WH_KEY) || '';
+  $('wh-setup').classList.toggle('hidden');
 };
 $('wh-save').onclick = ()=>{
   const u = $('wh-url').value.trim();
+  if(!u){
+    localStorage.removeItem(WH_KEY);
+    $('wh-setup').classList.add('hidden');
+    toast('🔗 Back to the default RecNet channel');
+    return;
+  }
   if(!validWebhook(u)){ toast('⚠️ That does not look like a Discord webhook URL'); return; }
   localStorage.setItem(WH_KEY, u);
   $('wh-setup').classList.add('hidden');
-  sendToRecNet(u);
+  toast('🔗 RecNet channel updated!');
 };
 $('wh-cancel').onclick = ()=> $('wh-setup').classList.add('hidden');
 $('ph-png').onclick = ()=>{
