@@ -91,8 +91,10 @@ if (location.hostname.indexOf('github.io') !== -1) {
     border-radius:10px; cursor:pointer; }
   #wh-setup #wh-save { background:rgba(88,101,242,.35); border-color:rgba(88,101,242,.6); }
   #wh-setup .hint { margin-top:8px; font-size:11.5px; color:#8b8e99; line-height:1.5; }
-  .wh-change { display:block; margin:10px auto 0; background:none; border:none; color:#8b8e99;
-    font-size:12px; cursor:pointer; text-decoration:underline; }
+  .vis-row { display:flex; gap:8px; margin:12px 0; }
+  .vis-btn { flex:1; padding:10px; font-size:14px; font-weight:700; color:#fff; cursor:pointer;
+    background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12); border-radius:10px; }
+  .vis-btn.sel { background:rgba(255,106,43,.35); border-color:#ff6a2b; }
 
   /* ---------- camera viewfinder ---------- */
   #cammode { position:fixed; inset:0; z-index:25; pointer-events:none; }
@@ -149,20 +151,23 @@ if (location.hostname.indexOf('github.io') !== -1) {
 <div id="photo" class="hidden">
   <h3>📷 Photo</h3>
   <img id="photo-img" alt="your photo">
+  <div class="vis-row">
+    <button id="vis-public" class="vis-btn">🌐 Public</button>
+    <button id="vis-private" class="vis-btn">🔒 Private</button>
+  </div>
   <div class="ph-btns">
     <button id="ph-recnet">🌐 Save to RecNet</button>
     <button id="ph-png">💾 Save as PNG</button>
     <button id="ph-close">✖ Close</button>
   </div>
-  <button id="wh-change" class="wh-change">🔗 Change RecNet channel</button>
   <div id="wh-setup" class="hidden">
-    <div class="wh-label">🔗 Override the RecNet Discord channel (blank = default):</div>
+    <div class="wh-label">🔒 Private photo — which channel should this go to?</div>
     <input id="wh-url" type="text" placeholder="https://discord.com/api/webhooks/…" spellcheck="false" autocomplete="off">
     <div class="wh-btns">
-      <button id="wh-save">🔗 Save</button>
+      <button id="wh-save">🔗 Send</button>
       <button id="wh-cancel">✖</button>
     </div>
-    <div class="hint">In Discord: right-click your channel → Edit channel → Integrations → Webhooks → New Webhook → Copy Webhook URL. Overrides are saved only in this browser.</div>
+    <div class="hint">Asked every photo in Private mode — the URL is never saved. In Discord: right-click channel → Edit channel → Integrations → Webhooks → New Webhook → Copy Webhook URL.</div>
   </div>
 </div>
 <div id="flash"></div>
@@ -468,6 +473,8 @@ function snapPhoto(){
   if(!cameraEquipped || !$('photo').classList.contains('hidden') || !allReady()) return;
   renderer.render(scene, camera);
   $('photo-img').src = renderer.domElement.toDataURL('image/png');
+  renderVis();
+  $('wh-setup').classList.add('hidden');
   $('photo').classList.remove('hidden');
   document.exitPointerLock?.();
   shutter();
@@ -476,9 +483,16 @@ function snapPhoto(){
   requestAnimationFrame(()=>{ f.style.transition = 'opacity .45s'; f.style.opacity = 0; });
 }
 /* ---------- Save to RecNet (Discord webhook) ---------- */
-const WH_KEY = 'recnova_recnet_webhook';
 const WH_DEFAULT = 'https://discord.com/api/webhooks/1561465066677739600/3PEkieHwFLSVuvZSN0Vn2MHcmIlt_bpw1Zy5Lj58fYKpfekPXOekC9dqC515ZDav3fpS';
-function recnetWebhook(){ return localStorage.getItem(WH_KEY) || WH_DEFAULT; }
+const VIS_KEY = 'recnova_recnet_visibility';   // 'public' | 'private'
+function recnetVisibility(){ return localStorage.getItem(VIS_KEY) || 'public'; }
+function renderVis(){
+  const v = recnetVisibility();
+  $('vis-public').classList.toggle('sel', v === 'public');
+  $('vis-private').classList.toggle('sel', v === 'private');
+}
+$('vis-public').onclick = ()=>{ localStorage.setItem(VIS_KEY, 'public'); renderVis(); };
+$('vis-private').onclick = ()=>{ localStorage.setItem(VIS_KEY, 'private'); renderVis(); };
 function validWebhook(u){ return /^https:\/\/(discord\.com|discordapp\.com)\/api\/webhooks\/\d\/.+/.test(u.trim()); }
 function dataURLtoBlob(dataURL){
   const [head, data] = dataURL.split(',');
@@ -504,28 +518,22 @@ async function sendToRecNet(url){
     $('wh-setup').classList.add('hidden');
   }catch(e){
     toast('⚠️ Could not send — check the webhook URL');
-    localStorage.removeItem(WH_KEY);   // bad URL: ask again next time
   }
   btn.disabled = false;
   btn.textContent = oldLabel;
 }
-$('ph-recnet').onclick = ()=> sendToRecNet(recnetWebhook());
-$('wh-change').onclick = ()=>{
-  $('wh-url').value = localStorage.getItem(WH_KEY) || '';
-  $('wh-setup').classList.toggle('hidden');
+$('ph-recnet').onclick = ()=>{
+  if(recnetVisibility() === 'public'){ sendToRecNet(WH_DEFAULT); return; }
+  // private: ask for the channel every photo, never save it
+  $('wh-url').value = '';
+  $('wh-setup').classList.remove('hidden');
+  $('wh-url').focus();
 };
 $('wh-save').onclick = ()=>{
   const u = $('wh-url').value.trim();
-  if(!u){
-    localStorage.removeItem(WH_KEY);
-    $('wh-setup').classList.add('hidden');
-    toast('🔗 Back to the default RecNet channel');
-    return;
-  }
   if(!validWebhook(u)){ toast('⚠️ That does not look like a Discord webhook URL'); return; }
-  localStorage.setItem(WH_KEY, u);
   $('wh-setup').classList.add('hidden');
-  toast('🔗 RecNet channel updated!');
+  sendToRecNet(u);
 };
 $('wh-cancel').onclick = ()=> $('wh-setup').classList.add('hidden');
 $('ph-png').onclick = ()=>{
