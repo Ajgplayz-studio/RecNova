@@ -64,6 +64,20 @@ if (location.hostname.indexOf('github.io') !== -1) {
     background:rgba(255,106,43,.35); border:1px solid rgba(255,106,43,.6); border-radius:10px; }
   .bp-use.equipped { background:rgba(80,200,120,.3); border-color:rgba(80,200,120,.6); }
 
+  /* ---------- photo viewer ---------- */
+  #photo { position:fixed; z-index:35; left:50%; top:50%; transform:translate(-50%,-50%);
+    background:rgba(10,14,26,.95); border:1px solid rgba(255,255,255,.14); border-radius:18px;
+    padding:20px; width:min(560px,92vw); }
+  #photo.hidden { display:none; }
+  #photo h3 { margin:0 0 12px; text-align:center; font-size:20px; }
+  #photo-img { width:100%; border-radius:12px; display:block; background:#000; }
+  #photo .ph-btns { display:flex; gap:8px; margin-top:12px; }
+  #photo .ph-btns button { flex:1; padding:12px; font-size:15px; font-weight:700; color:#fff;
+    background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.12);
+    border-radius:12px; cursor:pointer; }
+  #photo #ph-save { background:rgba(80,200,120,.25); border-color:rgba(80,200,120,.5); }
+  #flash { position:fixed; inset:0; z-index:44; background:#fff; opacity:0; pointer-events:none; }
+
   #toast { position:fixed; z-index:40; bottom:26px; left:50%; transform:translateX(-50%);
     background:rgba(10,13,25,.9); color:#ffd9a8; font-size:14px; padding:10px 20px;
     border-radius:999px; border:1px solid rgba(255,255,255,.1); opacity:0; transition:opacity .3s;
@@ -94,8 +108,18 @@ if (location.hostname.indexOf('github.io') !== -1) {
 <div id="backpack" class="hidden">
   <h3>🎒 Backpack</h3>
   <div class="bp-item"><span>🖊️ Maker Pen</span><button class="bp-use" id="bp-pen">Use</button></div>
+  <div class="bp-item"><span>📷 Camera</span><button class="bp-use" id="bp-cam">Use</button></div>
   <button class="wbtn wclose" id="bp-close">Close</button>
 </div>
+<div id="photo" class="hidden">
+  <h3>📷 Photo</h3>
+  <img id="photo-img" alt="your photo">
+  <div class="ph-btns">
+    <button id="ph-save">💾 Save</button>
+    <button id="ph-close">✖ Close</button>
+  </div>
+</div>
+<div id="flash"></div>
 <div id="toast"></div>
 <div id="hint" class="hidden"><b>WASD</b> move · <b>mouse</b> look · <b>Tab</b> watch · <b>Space</b> jump</div>
 
@@ -309,6 +333,7 @@ function gotoPlace(name){
 const keys = {};
 addEventListener('keydown', e=>{
   if(e.code==='Tab'){ e.preventDefault(); toggleWatch(); return; }
+  if(e.code==='KeyC'){ snapPhoto(); return; }
   keys[e.code] = true;
   if(e.code==='Space') e.preventDefault();
 });
@@ -359,6 +384,47 @@ $('bp-pen').onclick = ()=>{
   $('bp-pen').classList.toggle('equipped', makerPenEquipped);
   toast(makerPenEquipped ? '🖊️ Maker Pen equipped!' : '🖊️ Maker Pen put away');
 };
+/* ---------- camera: snap photos ---------- */
+let cameraEquipped = false, AC = null;
+$('bp-cam').onclick = ()=>{
+  cameraEquipped = !cameraEquipped;
+  $('bp-cam').textContent = cameraEquipped ? 'Unequip' : 'Use';
+  $('bp-cam').classList.toggle('equipped', cameraEquipped);
+  toast(cameraEquipped ? '📷 Camera equipped! Press C to snap a photo' : '📷 Camera put away');
+};
+function shutter(){
+  try{
+    AC = AC || new (window.AudioContext||window.webkitAudioContext)();
+    const t = AC.currentTime;
+    const o = AC.createOscillator(), g = AC.createGain();
+    o.type = 'square';
+    o.frequency.setValueAtTime(1800, t);
+    o.frequency.exponentialRampToValueAtTime(400, t+0.07);
+    g.gain.setValueAtTime(0.1, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t+0.09);
+    o.connect(g); g.connect(AC.destination);
+    o.start(t); o.stop(t+0.1);
+  }catch(e){}
+}
+function snapPhoto(){
+  if(!cameraEquipped || !$('photo').classList.contains('hidden') || !allReady()) return;
+  renderer.render(scene, camera);
+  $('photo-img').src = renderer.domElement.toDataURL('image/png');
+  $('photo').classList.remove('hidden');
+  document.exitPointerLock?.();
+  shutter();
+  const f = $('flash');
+  f.style.transition = 'none'; f.style.opacity = 0.85;
+  requestAnimationFrame(()=>{ f.style.transition = 'opacity .45s'; f.style.opacity = 0; });
+}
+$('ph-save').onclick = ()=>{
+  const a = document.createElement('a');
+  a.href = $('photo-img').src;
+  a.download = 'recnova-photo.png';
+  document.body.appendChild(a); a.click(); a.remove();
+  toast('💾 Photo saved!');
+};
+$('ph-close').onclick = ()=> $('photo').classList.add('hidden');
 function makeRoom(){
   const g = new THREE.Group(), S = 6;
   const floor = new THREE.Mesh(new THREE.PlaneGeometry(S*2,S*2),
