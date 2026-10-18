@@ -48,6 +48,21 @@ if (location.hostname.indexOf('github.io') !== -1) {
   #watch .wbtn:hover:not(:disabled) { background:rgba(255,106,43,.35); }
   #watch .wbtn:disabled { opacity:.35; cursor:default; }
   #watch .wclose { margin-top:6px; background:rgba(255,255,255,.04); }
+  /* ---------- backpack ---------- */
+  #backpack { position:fixed; z-index:30; left:50%; top:50%; transform:translate(-50%,-50%);
+    background:rgba(10,14,26,.92); border:1px solid rgba(255,255,255,.14); border-radius:18px;
+    padding:22px 20px; width:min(340px,86vw); backdrop-filter:blur(10px); }
+  #backpack h3 { margin:0 0 14px; text-align:center; font-size:20px; }
+  #backpack .wbtn { display:block; width:100%; margin:8px 0; padding:14px; font-size:16px; font-weight:700;
+    color:#fff; background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.12);
+    border-radius:12px; cursor:pointer; }
+  #backpack .wbtn.wclose { margin-top:6px; background:rgba(255,255,255,.04); }
+  .bp-item { display:flex; align-items:center; justify-content:space-between;
+    background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1);
+    border-radius:12px; padding:12px 14px; margin:8px 0; font-size:16px; font-weight:600; }
+  .bp-use { padding:8px 18px; font-size:14px; font-weight:700; color:#fff; cursor:pointer;
+    background:rgba(255,106,43,.35); border:1px solid rgba(255,106,43,.6); border-radius:10px; }
+  .bp-use.equipped { background:rgba(80,200,120,.3); border-color:rgba(80,200,120,.6); }
 
   #toast { position:fixed; z-index:40; bottom:26px; left:50%; transform:translateX(-50%);
     background:rgba(10,13,25,.9); color:#ffd9a8; font-size:14px; padding:10px 20px;
@@ -71,9 +86,15 @@ if (location.hostname.indexOf('github.io') !== -1) {
 </div>
 <div id="watch" class="hidden">
   <h3>⌚ Watch</h3>
-  <button class="wbtn" id="w-dorm">🛏️ Dorm Room</button>
-  <button class="wbtn" id="w-rec">🏟️ Rec Center</button>
+  <div id="w-places"></div>
+  <button class="wbtn" id="w-backpack">🎒 Backpack</button>
+  <button class="wbtn" id="w-create">➕ Create</button>
   <button class="wbtn wclose" id="w-close">Close</button>
+</div>
+<div id="backpack" class="hidden">
+  <h3>🎒 Backpack</h3>
+  <div class="bp-item"><span>🖊️ Maker Pen</span><button class="bp-use" id="bp-pen">Use</button></div>
+  <button class="wbtn wclose" id="bp-close">Close</button>
 </div>
 <div id="toast"></div>
 <div id="hint" class="hidden"><b>WASD</b> move · <b>mouse</b> look · <b>Tab</b> watch · <b>Space</b> jump</div>
@@ -271,14 +292,17 @@ function gotoPlace(name){
   } else if(name==='rec' && recState.ready){
     rig.position.set(recState.spawnX, recState.floorY, recState.spawnZ);
     yaw = recState.yaw; pitch = 0;
+  } else if(PLACES[name].custom){
+    const s = PLACES[name].spawn;
+    rig.position.set(s.x, s.y, s.z);
+    yaw = s.yaw; pitch = 0;
   } else {
     rig.position.set(0, 0, 10);
     yaw = Math.PI; pitch = 0;
   }
   vy = 0; grounded = true;
   $('loc').textContent = PLACES[place].label;
-  $('w-dorm').disabled = (name==='dorm');
-  $('w-rec').disabled  = (name==='rec');
+  renderWatchPlaces();
 }
 
 /* ============================== controls (PC + VR) ============================== */
@@ -308,8 +332,64 @@ function toggleWatch(){
   if(!$('watch').classList.contains('hidden')) document.exitPointerLock?.();
 }
 $('w-close').onclick = toggleWatch;
-$('w-dorm').onclick = ()=>{ gotoPlace('dorm'); toggleWatch(); };
-$('w-rec').onclick  = ()=>{ gotoPlace('rec');  toggleWatch(); };
+function renderWatchPlaces(){
+  const c = $('w-places'); c.innerHTML = '';
+  for(const key of Object.keys(PLACES)){
+    const b = document.createElement('button');
+    b.className = 'wbtn'; b.textContent = PLACES[key].label;
+    b.disabled = (key === place);
+    b.onclick = ()=>{ gotoPlace(key); toggleWatch(); };
+    c.appendChild(b);
+  }
+}
+
+/* ---------- backpack + maker pen + room creation ---------- */
+let makerPenEquipped = false, roomCount = 0;
+$('w-backpack').onclick = ()=>{
+  $('watch').classList.add('hidden');
+  $('backpack').classList.remove('hidden');
+};
+$('bp-close').onclick = ()=>{
+  $('backpack').classList.add('hidden');
+  $('watch').classList.remove('hidden');
+};
+$('bp-pen').onclick = ()=>{
+  makerPenEquipped = !makerPenEquipped;
+  $('bp-pen').textContent = makerPenEquipped ? 'Unequip' : 'Use';
+  $('bp-pen').classList.toggle('equipped', makerPenEquipped);
+  toast(makerPenEquipped ? '🖊️ Maker Pen equipped!' : '🖊️ Maker Pen put away');
+};
+function makeRoom(){
+  const g = new THREE.Group(), S = 6;
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(S*2,S*2),
+    new THREE.MeshStandardMaterial({ color:0x9a9a9a }));
+  floor.rotation.x = -Math.PI/2; g.add(floor);
+  const wm = new THREE.MeshStandardMaterial({ color:0x4a6fa5 });
+  const wall = (x,z,ry)=>{
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(S*2,4), wm);
+    m.position.set(x,2,z); m.rotation.y = ry; g.add(m);
+  };
+  wall(0,-S,0); wall(0,S,Math.PI); wall(-S,0,Math.PI/2); wall(S,0,-Math.PI/2);
+  const ceil = new THREE.Mesh(new THREE.PlaneGeometry(S*2,S*2),
+    new THREE.MeshStandardMaterial({ color:0x2e3440 }));
+  ceil.rotation.x = Math.PI/2; ceil.position.y = 4; g.add(ceil);
+  return g;
+}
+$('w-create').onclick = ()=>{
+  if(!makerPenEquipped){ toast('⚠️ Equip the Maker Pen from your backpack first!'); return; }
+  roomCount++;
+  const key = 'room'+roomCount;
+  const label = '🏠 My Room' + (roomCount>1 ? ' '+roomCount : '');
+  const group = makeRoom();
+  group.visible = false;
+  scene.add(group);
+  PLACES[key] = { group, label, custom:true,
+    spawn:{ x:0, y:0, z:0, yaw:0 }, bounds:5 };
+  renderWatchPlaces();
+  gotoPlace(key);
+  toggleWatch();
+  toast('🏠 Room created!');
+};
 
 /* VR */
 renderer.xr.enabled = true;
@@ -320,8 +400,8 @@ ctrl.forEach(c=> rig.add(c));
 /* ============================== loop ============================== */
 const clock = new THREE.Clock();
 const fwd = new THREE.Vector3(), rgt = new THREE.Vector3();
-function floorY(){ return place==='dorm' ? dormState.floorY : recState.floorY; }
-function placeReady(){ return place==='dorm' ? dormState.ready : recState.ready; }
+function floorY(){ return PLACES[place].custom ? 0 : place==='dorm' ? dormState.floorY : recState.floorY; }
+function placeReady(){ return PLACES[place].custom ? true : place==='dorm' ? dormState.ready : recState.ready; }
 function stepPlayer(dt){
   const sp = (keys.ShiftLeft||keys.ShiftRight) ? 7 : 4.2;
   fwd.set(-Math.sin(yaw),0,-Math.cos(yaw)); rgt.set(-fwd.z,0,fwd.x);
@@ -342,7 +422,9 @@ function stepPlayer(dt){
   vy -= 14*dt; rig.position.y += vy*dt;
   const fy = floorY();
   if(rig.position.y <= fy){ rig.position.y = fy; vy = 0; grounded = true; }
-  const lim = place==='dorm'
+  const lim = PLACES[place].custom
+    ? { x0:-PLACES[place].bounds, x1:PLACES[place].bounds, z0:-PLACES[place].bounds, z1:PLACES[place].bounds }
+    : place==='dorm'
     ? { x0:dormState.minX, x1:dormState.maxX, z0:dormState.minZ, z1:dormState.maxZ }
     : { x0:-29, x1:11, z0:-37, z1:17 };
   rig.position.x = Math.max(lim.x0, Math.min(lim.x1, rig.position.x));
