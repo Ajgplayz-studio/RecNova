@@ -174,12 +174,12 @@ function loadDorm(){
       dormState.cx = ctr.x; dormState.cz = ctr.z;
       dormState.minX = bb.min.x + .45; dormState.maxX = bb.max.x - .45;
       dormState.minZ = bb.min.z + .45; dormState.maxZ = bb.max.z - .45;
-      // floor: raycast down from INSIDE the room (below the 2.52 ceiling)
+      // floor: raycast down from just under the overhead platform (y=1.0)
       // at the spawn point — first hit is the surface we stand on.
-      // (Raycasting from above the model hits the roof first — wrong.)
-      const spawnX = -3.0, spawnZ = 3.5;
+      // (Casting from above the model hits the roof; from y=2.0 hits the platform.)
+      const spawnX = 2.0, spawnZ = 0.0;
       const rc = new THREE.Raycaster(
-        new THREE.Vector3(spawnX, 2.0, spawnZ),
+        new THREE.Vector3(spawnX, 1.0, spawnZ),
         new THREE.Vector3(0,-1,0));
       const hits = rc.intersectObject(model, true);
       dormState.floorY = hits.length ? hits[0].point.y : -1.5;
@@ -233,6 +233,23 @@ function buildRecCenter(){
 }
 rec.add(buildRecCenter());
 
+/* ---- dorm collision grid (baked from dorm.glb walls/furniture) ----
+   X0,Z0 = grid origin, CELL = cell size, NX/NZ = dims, DATA = base64 bitmask */
+const CX0=-4.3, CZ0=-5.9, CELL=0.25, CNX=38, CNZ=40;
+const CDATA="/4P/+AP////wD////8ABgAAHAAYAABwAGAAAcABgAAHAAYAABwAGAAAcAB////AAf///wAHgf/8AB4H//AAeB7/wAHgAD8AB4AA/AAYAAPwAGAAD8ABgAA//wfwAP/8H/+AMAB//gDAAf/4AwAH/+AMAB/AADAAfwAAwAH8AAMABvAADAAbwAHwAH8AB8AB/AAfAAfwAHwAH+AB8AB/4B/AAf+AfwAH/gH8AAf///AAH///wAB///8AB////AA==";
+const CBITS=(()=>{const s=atob(CDATA);const a=new Uint8Array(s.length);for(let i=0;i<s.length;i++)a[i]=s.charCodeAt(i);return a;})();
+function cellBlocked(ix,iz){
+  if(ix<0||iz<0||ix>=CNX||iz>=CNZ) return true;
+  const b=CBITS[(iz*CNX+ix)>>3]; return ((b>>(7-((iz*CNX+ix)&7)))&1)===1;
+}
+function solidAt(x,z){
+  const r=0.28;   // player radius
+  return cellBlocked(Math.floor((x-r-CX0)/CELL),Math.floor((z-r-CZ0)/CELL)) ||
+         cellBlocked(Math.floor((x+r-CX0)/CELL),Math.floor((z-r-CZ0)/CELL)) ||
+         cellBlocked(Math.floor((x-r-CX0)/CELL),Math.floor((z+r-CZ0)/CELL)) ||
+         cellBlocked(Math.floor((x+r-CX0)/CELL),Math.floor((z+r-CZ0)/CELL));
+}
+
 /* ============================== places / teleport ============================== */
 const PLACES = {
   dorm: { group:dorm, label:'🛏️ Dorm Room' },
@@ -246,7 +263,7 @@ function gotoPlace(name){
   PLACES[place].group.visible = true;
   if(name==='dorm' && dormState.ready){
     rig.position.set(dormState.spawnX, dormState.floorY, dormState.spawnZ);
-    yaw = -0.685; pitch = 0;   // face the room center from the SW corner
+    yaw = 1.75; pitch = 0;   // face the room's main area from the open east side
   } else {
     rig.position.set(0, 0, 10);
     yaw = Math.PI; pitch = 0;
@@ -303,7 +320,16 @@ function stepPlayer(dt){
   const mv = new THREE.Vector3();
   if(keys.KeyW) mv.add(fwd); if(keys.KeyS) mv.sub(fwd);
   if(keys.KeyD) mv.add(rgt); if(keys.KeyA) mv.sub(rgt);
-  if(mv.lengthSq()>0){ mv.normalize().multiplyScalar(sp*dt); rig.position.add(mv); }
+  if(mv.lengthSq()>0){
+    mv.normalize().multiplyScalar(sp*dt);
+    if(place==='dorm' && dormState.ready){
+      // axis-separated collision so you slide along walls instead of sticking
+      const nx = rig.position.x + mv.x;
+      if(!solidAt(nx, rig.position.z)) rig.position.x = nx;
+      const nz = rig.position.z + mv.z;
+      if(!solidAt(rig.position.x, nz)) rig.position.z = nz;
+    } else rig.position.add(mv);
+  }
   if(keys.Space && grounded){ vy = 5.2; grounded = false; }
   vy -= 14*dt; rig.position.y += vy*dt;
   const fy = floorY();
@@ -322,7 +348,16 @@ function stepVR(dt){
     const mv = new THREE.Vector3()
       .addScaledVector(fwd, -(gp.axes[3]||0))
       .addScaledVector(rgt,  (gp.axes[2]||0));
-    if(mv.lengthSq()>0.0004) rig.position.addScaledVector(mv.normalize(), 4*dt);
+    if(mv.lengthSq()>0.0004){
+      mv.normalize();
+      const step = mv.multiplyScalar(4*dt);
+      if(place==='dorm' && dormState.ready){
+        const nx = rig.position.x + step.x;
+        if(!solidAt(nx, rig.position.z)) rig.position.x = nx;
+        const nz = rig.position.z + step.z;
+        if(!solidAt(rig.position.x, nz)) rig.position.z = nz;
+      } else rig.position.add(step);
+    }
   }
   const gp2 = ctrl[1]?.gamepad;
   if(gp2){
