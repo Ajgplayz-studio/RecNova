@@ -552,12 +552,29 @@ function photoCaption(){
   const t = new Date().toLocaleTimeString([], { hour:'numeric', minute:'2-digit' });
   return `📷 made by ${playerName} at ${t}`;
 }
+async function uploadToCatbox(dataURL){
+  // returns the public Catbox URL, or null if the upload fails / is blocked
+  try{
+    const ctl = new AbortController();
+    const t = setTimeout(()=> ctl.abort(), 8000);
+    const fd = new FormData();
+    fd.append('reqtype', 'fileupload');
+    fd.append('fileToUpload', dataURLtoBlob(dataURL), 'recnova-photo.png');
+    const res = await fetch('https://catbox.moe/user/api.php', { method:'POST', body:fd, signal:ctl.signal });
+    clearTimeout(t);
+    if(!res.ok) return null;
+    const url = (await res.text()).trim();
+    return url.startsWith('https://') ? url : null;
+  }catch(e){ return null; }
+}
 async function postPhoto(url, dataURL){
+  const catboxURL = await uploadToCatbox(dataURL);
   const fd = new FormData();
-  fd.append('content', photoCaption());
+  fd.append('content', photoCaption() + (catboxURL ? '\n' + catboxURL : ''));
   fd.append('file', dataURLtoBlob(dataURL), 'recnova-photo.png');
   const res = await fetch(url.trim(), { method:'POST', body:fd });
   if(!res.ok) throw new Error('HTTP '+res.status);
+  return catboxURL;
 }
 async function sendToRecNet(url){
   const btn = $('ph-recnet');
@@ -565,8 +582,8 @@ async function sendToRecNet(url){
   const oldLabel = btn.textContent;
   btn.textContent = '⏳ Sending…';
   try{
-    await postPhoto(url, $('photo-img').src);
-    toast('📷 Sent to RecNet!');
+    const catboxURL = await postPhoto(url, $('photo-img').src);
+    toast(catboxURL ? '📷 Sent to RecNet + Catbox!' : '📷 Sent to RecNet!');
     $('photo').classList.add('hidden');
     $('wh-setup').classList.add('hidden');
   }catch(e){
@@ -788,8 +805,8 @@ async function vrSendPhoto(){
   if(recnetVisibility() !== 'public'){ drawVRPhoto('🔒 Private mode — post from PC'); return; }
   drawVRPhoto('⏳ Sending…');
   try{
-    await postPhoto(WH_DEFAULT, vrPhotoURL);
-    drawVRPhoto('✓ Sent to RecNet!');
+    const catboxURL = await postPhoto(WH_DEFAULT, vrPhotoURL);
+    drawVRPhoto(catboxURL ? '✓ RecNet + Catbox!' : '✓ Sent to RecNet!');
   }catch(e){ drawVRPhoto('⚠️ Send failed'); }
 }
 function vrPhotoPress(kind){
