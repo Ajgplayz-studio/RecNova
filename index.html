@@ -539,7 +539,7 @@ function renderVis(){
 }
 $('vis-public').onclick = ()=>{ localStorage.setItem(VIS_KEY, 'public'); renderVis(); };
 $('vis-private').onclick = ()=>{ localStorage.setItem(VIS_KEY, 'private'); renderVis(); };
-function validWebhook(u){ return /^https:\/\/(discord\.com|discordapp\.com)\/api\/webhooks\/\d\/.+/.test(u.trim()); }
+function validWebhook(u){ return /^https:\/\/(discord\.com|discordapp\.com)\/api\/webhooks\/\d+\/.+/.test(u.trim()); }
 function dataURLtoBlob(dataURL){
   const [head, data] = dataURL.split(',');
   const mime = (head.match(/:(.*?);/)||[])[1] || 'image/png';
