@@ -54,28 +54,65 @@ if (location.hostname.indexOf('github.io') !== -1) {
     background:rgba(10,13,25,.8); border:1px solid rgba(255,255,255,.12); color:#fff;
     padding:8px 20px; border-radius:999px; font-size:14px; font-weight:600; }
 
-  /* ---------- watch (Rec Room style: round watch face, pill buttons) ---------- */
+  /* ---------- watch: 2026 Rec Room Home menu recreation (light theme) ---------- */
   #watch { position:fixed; z-index:30; left:50%; top:50%; transform:translate(-50%,-50%);
-    width:min(380px, 90vw); max-height:92vh; overflow-y:auto;
-    background:linear-gradient(180deg, #182238, #0c1220); border:2px solid #3d4a6b;
-    border-radius:28px; padding:22px; color:#fff; box-shadow:0 20px 60px rgba(0,0,0,.6); }
-  #watch .wface { width:118px; height:118px; margin:2px auto 4px; border-radius:50%;
-    background:radial-gradient(circle at 35% 30%, #263350, #0e1526 70%);
-    border:4px solid #ff8a3c; box-shadow:0 0 0 3px rgba(255,255,255,.08), 0 6px 18px rgba(0,0,0,.5);
-    display:flex; flex-direction:column; align-items:center; justify-content:center; }
-  #watch #w-time { font-size:27px; font-weight:800; letter-spacing:1px; }
-  #watch #w-date { font-size:11px; color:#9aa3b5; margin-top:2px; }
-  #watch .wlabel { text-align:center; font-size:12px; font-weight:800; letter-spacing:4px;
-    color:#9aa3b5; margin-bottom:12px; }
-  #watch .wsec { font-size:12px; font-weight:800; letter-spacing:2px; color:#8b93a8;
-    margin:14px 2px 2px; }
-  #watch .wbtn { display:block; width:100%; margin:8px 0; padding:13px 14px; font-size:16px; font-weight:700;
-    color:#fff; background:rgba(255,255,255,.10); border:1px solid rgba(255,255,255,.16);
-    border-radius:999px; cursor:pointer; text-align:left; padding-left:18px; }
-  #watch .wbtn:hover:not(:disabled) { background:rgba(255,106,43,.45); border-color:rgba(255,138,60,.7); }
-  #watch .wbtn:disabled { opacity:1; background:rgba(47,125,225,.55);
-    border-color:rgba(120,180,255,.6); cursor:default; }
-  #watch .wclose { margin-top:14px; background:rgba(255,255,255,.04); text-align:center; padding-left:14px; }
+    width:min(880px, 94vw); max-height:92vh; overflow-y:auto;
+    background:#f6e3cd; border-radius:24px; color:#2b2118; box-shadow:0 20px 60px rgba(0,0,0,.6); }
+  #watch .w-top { display:flex; align-items:center; justify-content:space-between;
+    padding:18px 22px 10px; }
+  #watch .w-me { display:flex; align-items:center; gap:12px; }
+  #watch .w-badge { position:relative; width:52px; height:52px; border-radius:10px;
+    border:3px solid #ff8a3c; background:#fff; display:flex; align-items:center; justify-content:center;
+    font-size:26px; font-weight:800; color:#2b2118; }
+  #watch .wdot { position:absolute; right:-4px; bottom:-4px; width:14px; height:14px;
+    border-radius:50%; background:#3fbf5f; border:2px solid #f6e3cd; }
+  #watch .w-name { font-size:22px; font-weight:800; }
+  #watch .w-handle { font-size:14px; color:#7a6a58; }
+  #watch .w-right { display:flex; align-items:center; gap:10px; }
+  #watch .w-pill { background:#fff; border-radius:999px; padding:8px 14px; font-size:14px; font-weight:700; }
+  #watch .w-x { width:36px; height:36px; border-radius:50%; border:0; background:#fff;
+    font-size:16px; font-weight:800; cursor:pointer; color:#2b2118; }
+  #watch .w-body { padding:4px 22px 18px; }
+  #watch .w-row { display:flex; gap:16px; }
+  #watch .w-qa { flex:1; display:flex; gap:10px; }
+  #watch .wtile { flex:1; background:#fff; border:0; border-radius:14px; padding:12px 2px 8px;
+    cursor:pointer; color:#2b2118; }
+  #watch .wtile .qi { font-size:26px; display:block; }
+  #watch .wtile .ql { font-size:12px; font-weight:700; display:block; margin-top:4px; }
+  #watch .wtile.dim { opacity:.55; }
+  #watch .w-side { width:190px; flex:none; display:flex; flex-direction:column; gap:10px; }
+  #watch .w-go { background:#fdf3e3; border:1px solid #e8c9a0; border-radius:14px; padding:13px 14px;
+    font-size:15px; font-weight:700; cursor:pointer; color:#2b2118; text-align:left; }
+  #watch .w-go:disabled { opacity:.55; cursor:default; }
+  #watch .w-go span { display:block; font-size:12px; font-weight:600; color:#7a6a58; margin-top:2px; }
+  #watch .w-sec { display:flex; justify-content:space-between; align-items:baseline; margin:20px 0 10px; }
+  #watch .w-sec h4 { margin:0; font-size:17px; }
+  #watch .w-sec button { border:0; background:none; color:#b3551f; font-weight:700; cursor:pointer; font-size:13px; }
+  #watch .w-cards { display:grid; grid-template-columns:repeat(6, 1fr); gap:10px; }
+  #watch .wcard { background:#fff; border:2px solid transparent; border-radius:14px; padding:0 0 8px;
+    cursor:pointer; overflow:hidden; color:#2b2118; text-align:left; }
+  #watch .wcard .thumb { height:64px; background:#efe0c8; display:flex; align-items:center; justify-content:center; font-size:30px; }
+  #watch .wcard .ct { font-size:12px; font-weight:700; padding:6px 8px 0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  #watch .wcard.here { border-color:#ff8a3c; }
+  #watch .wcard.here .ct::after { content:' · HERE'; color:#b3551f; font-size:10px; }
+  #watch .w-tabs { display:flex; gap:8px; margin-bottom:14px; }
+  #watch .wtab { border:0; border-radius:999px; padding:8px 18px; font-weight:700; cursor:pointer; background:#fff; color:#2b2118; }
+  #watch .wtab.on { background:#e8762d; color:#fff; }
+  #watch .w-search { width:100%; padding:12px 16px; border-radius:999px; border:1px solid #e8c9a0; background:#fff; font-size:15px; margin-bottom:14px; outline:none; box-sizing:border-box; }
+  #watch .w-empty { color:#7a6a58; font-size:14px; padding:20px 0; text-align:center; }
+  #watch .w-dock { display:flex; background:linear-gradient(180deg, #f08a3c, #d96a1f); padding:8px 10px; gap:2px; border-radius:0 0 24px 24px; }
+  #watch .wdock { flex:1; border:0; background:none; color:#fff; cursor:pointer; padding:6px 0 4px; border-radius:12px; }
+  #watch .wdock .di { font-size:20px; display:block; }
+  #watch .wdock .dl { font-size:9px; font-weight:800; letter-spacing:.5px; display:block; margin-top:2px; }
+  #watch .wdock.on { background:rgba(0,0,0,.22); }
+  #watch .wdock.dim { opacity:.6; }
+  @media (max-width:640px){
+    #watch .w-cards { grid-template-columns:repeat(3, 1fr); }
+    #watch .w-row { flex-direction:column; }
+    #watch .w-side { width:auto; flex-direction:row; }
+    #watch .w-side .w-go { flex:1; }
+    #watch .wdock .dl { display:none; }
+  }
   /* ---------- backpack ---------- */
   #backpack { position:fixed; z-index:30; left:50%; top:50%; transform:translate(-50%,-50%);
     background:rgba(10,14,26,.92); border:1px solid rgba(255,255,255,.14); border-radius:18px;
@@ -172,14 +209,18 @@ if (location.hostname.indexOf('github.io') !== -1) {
   <div id="loc">🛏️ Dorm Room</div>
 </div>
 <div id="watch" class="hidden">
-  <div class="wface"><div id="w-time">--:--</div><div id="w-date"></div></div>
-  <div class="wlabel">WATCH</div>
-  <div class="wsec">GO TO</div>
-  <div id="w-places"></div>
-  <div class="wsec">MENU</div>
-  <button class="wbtn" id="w-backpack">🎒 Backpack</button>
-  <button class="wbtn" id="w-create">➕ Create</button>
-  <button class="wbtn wclose" id="w-close">Close</button>
+  <div class="w-top">
+    <div class="w-me">
+      <div class="w-badge"><span id="w-initial">P</span><span class="wdot"></span></div>
+      <div><div class="w-name" id="w-name">Player</div><div class="w-handle" id="w-handle">@player</div></div>
+    </div>
+    <div class="w-right">
+      <div class="w-pill" id="w-place-pill">📍 Dorm Room</div>
+      <button class="w-x" id="w-close">✕</button>
+    </div>
+  </div>
+  <div class="w-body" id="w-body"></div>
+  <div class="w-dock" id="w-dock"></div>
 </div>
 <div id="backpack" class="hidden">
   <h3>🎒 Backpack</h3>
@@ -469,41 +510,145 @@ addEventListener('mousemove', e=>{
   pitch -= e.movementY * .0024;
   pitch = Math.max(-1.5, Math.min(1.5, pitch));
 });
-function paintWatchTime(){
-  const d = new Date();
-  const t = $('w-time');
-  if(t) t.textContent = String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
-  const dt = $('w-date');
-  if(dt) dt.textContent = d.toLocaleDateString(undefined, { weekday:'short', month:'short', day:'numeric' });
+/* ---------- watch: 2026 Rec Room Home menu recreation ---------- */
+let watchPage = 'home', watchTab = 'highlights', watchQuery = '';
+const WATCH_SOON = (name)=>toast(name + " isn't in RecNova yet");
+function splitLabel(label){
+  const i = label.indexOf(' ');
+  return i < 0 ? ['', label] : [label.slice(0, i), label.slice(i + 1)];
 }
-setInterval(()=>{ if(!$('watch').classList.contains('hidden')) paintWatchTime(); }, 10000);
+function placeCard(key){
+  const b = document.createElement('button');
+  b.className = 'wcard' + (key === place ? ' here' : '');
+  const [emo, name] = splitLabel(PLACES[key].label);
+  const th = document.createElement('div'); th.className = 'thumb'; th.textContent = emo;
+  const ct = document.createElement('div'); ct.className = 'ct'; ct.textContent = name;
+  b.append(th, ct);
+  b.onclick = ()=>{ gotoPlace(key); toggleWatch(); };
+  return b;
+}
+function renderCards(container, keys){
+  container.innerHTML = '';
+  if(!keys.length){
+    const d = document.createElement('div'); d.className = 'w-empty';
+    d.textContent = 'Nothing here yet.';
+    container.appendChild(d); return;
+  }
+  for(const k of keys) container.appendChild(placeCard(k));
+}
+function qaTile(icon, label, fn, dim){
+  const b = document.createElement('button');
+  b.className = 'wtile' + (dim ? ' dim' : '');
+  const i = document.createElement('span'); i.className = 'qi'; i.textContent = icon;
+  const l = document.createElement('span'); l.className = 'ql'; l.textContent = label;
+  b.append(i, l); b.onclick = fn; return b;
+}
+function playKeys(){
+  const keys = Object.keys(PLACES);
+  if(watchTab === 'library') return keys.filter(k => PLACES[k].custom);
+  if(watchTab === 'search' && watchQuery.trim()){
+    const q = watchQuery.trim().toLowerCase();
+    return keys.filter(k => PLACES[k].label.toLowerCase().includes(q));
+  }
+  return keys;
+}
+function renderWatchBody(){
+  const body = $('w-body'); body.innerHTML = '';
+  if(watchPage === 'play'){
+    const tabs = document.createElement('div'); tabs.className = 'w-tabs';
+    for(const [tab, label] of [['highlights','Highlights'],['search','Search'],['library','Library']]){
+      const t = document.createElement('button');
+      t.className = 'wtab' + (watchTab === tab ? ' on' : ''); t.textContent = label;
+      t.onclick = ()=>{ watchTab = tab; renderWatchBody(); };
+      tabs.appendChild(t);
+    }
+    body.appendChild(tabs);
+    const cards = document.createElement('div'); cards.className = 'w-cards';
+    if(watchTab === 'search'){
+      const inp = document.createElement('input');
+      inp.className = 'w-search'; inp.placeholder = 'Search rooms…'; inp.value = watchQuery;
+      inp.oninput = ()=>{ watchQuery = inp.value; renderCards(cards, playKeys()); };
+      body.appendChild(inp);
+    }
+    body.appendChild(cards);
+    renderCards(cards, playKeys());
+    return;
+  }
+  const row = document.createElement('div'); row.className = 'w-row';
+  const qa = document.createElement('div'); qa.className = 'w-qa';
+  qa.append(
+    qaTile('▶️', 'Play', ()=>{ watchPage = 'play'; renderWatch(); }),
+    qaTile('🖊️', 'Create', ()=>{ if(createRoom()) toggleWatch(); }),
+    qaTile('🛍️', 'Store', ()=>WATCH_SOON('The Store'), true),
+    qaTile('🎉', 'Events', ()=>WATCH_SOON('Events'), true),
+    qaTile('🛡️', 'Clubs', ()=>WATCH_SOON('Clubs'), true),
+    qaTile('🏆', 'Challenges', ()=>WATCH_SOON('Challenges'), true),
+    qaTile('🎒', 'Backpack', ()=>{ $('watch').classList.add('hidden'); $('backpack').classList.remove('hidden'); }),
+  );
+  const side = document.createElement('div'); side.className = 'w-side';
+  for(const [key, sub] of [['dorm','Your dorm'],['rec','The hangout']]){
+    const b = document.createElement('button'); b.className = 'w-go'; b.disabled = (key === place);
+    b.textContent = PLACES[key].label;
+    const s = document.createElement('span'); s.textContent = sub; b.appendChild(s);
+    b.onclick = ()=>{ gotoPlace(key); toggleWatch(); };
+    side.appendChild(b);
+  }
+  row.append(qa, side); body.appendChild(row);
+  const sec = document.createElement('div'); sec.className = 'w-sec';
+  const h = document.createElement('h4'); h.textContent = 'Continue Playing';
+  const more = document.createElement('button'); more.textContent = 'More Rooms →';
+  more.onclick = ()=>{ watchPage = 'play'; renderWatch(); };
+  sec.append(h, more); body.appendChild(sec);
+  const cards = document.createElement('div'); cards.className = 'w-cards';
+  body.appendChild(cards);
+  renderCards(cards, Object.keys(PLACES).slice(0, 6));
+}
+const WATCH_DOCK = [
+  ['👤','PROFILE','profile'], ['🏠','HOME','home'], ['🎮','PLAY','play'], ['👕','CUSTOMIZE','customize'],
+  ['🔨','CREATE','create'], ['🛍️','STORE','store'], ['👥','PEOPLE','people'], ['📍','THIS ROOM','room'],
+  ['💬','CHAT','chat'], ['🔔','NOTIFICATIONS','bell'], ['⚙️','SETTINGS','settings'],
+];
+function renderDock(){
+  const dock = $('w-dock'); dock.innerHTML = '';
+  for(const [icon, label, kind] of WATCH_DOCK){
+    const b = document.createElement('button');
+    const active = (kind === 'home' && watchPage === 'home') || (kind === 'play' && watchPage === 'play');
+    const functional = kind === 'home' || kind === 'play' || kind === 'create';
+    b.className = 'wdock' + (active ? ' on' : '') + (functional ? '' : ' dim');
+    const i = document.createElement('span'); i.className = 'di'; i.textContent = icon;
+    const l = document.createElement('span'); l.className = 'dl'; l.textContent = label;
+    b.append(i, l);
+    b.onclick = ()=>{
+      if(kind === 'home'){ watchPage = 'home'; renderWatch(); }
+      else if(kind === 'play'){ watchPage = 'play'; renderWatch(); }
+      else if(kind === 'create'){ if(createRoom()) toggleWatch(); }
+      else WATCH_SOON(label.charAt(0) + label.slice(1).toLowerCase());
+    };
+    dock.appendChild(b);
+  }
+}
+function renderWatch(){
+  const name = playerName.trim() || 'Player';
+  $('w-initial').textContent = name[0].toUpperCase();
+  $('w-name').textContent = name;
+  $('w-handle').textContent = '@' + name.toLowerCase().replace(/\s+/g, '');
+  $('w-place-pill').textContent = '📍 ' + splitLabel(PLACES[place].label)[1];
+  renderWatchBody(); renderDock();
+}
+function renderWatchPlaces(){ if(!$('watch').classList.contains('hidden')) renderWatch(); }
 function toggleWatch(){
   if(!allReady()) return;
   $('watch').classList.toggle('hidden');
-  if(!$('watch').classList.contains('hidden')){ paintWatchTime(); document.exitPointerLock?.(); }
+  if(!$('watch').classList.contains('hidden')){ renderWatch(); document.exitPointerLock?.(); }
 }
 $('w-close').onclick = toggleWatch;
-function renderWatchPlaces(){
-  const c = $('w-places'); c.innerHTML = '';
-  for(const key of Object.keys(PLACES)){
-    const b = document.createElement('button');
-    b.className = 'wbtn'; b.textContent = PLACES[key].label;
-    b.disabled = (key === place);
-    b.onclick = ()=>{ gotoPlace(key); toggleWatch(); };
-    c.appendChild(b);
-  }
-}
 
 /* ---------- backpack + maker pen + room creation ---------- */
 let makerPenEquipped = false, roomCount = 0;
-$('w-backpack').onclick = ()=>{
-  $('watch').classList.add('hidden');
-  $('backpack').classList.remove('hidden');
-};
 $('bp-close').onclick = ()=>{
   $('backpack').classList.add('hidden');
   $('watch').classList.remove('hidden');
-  paintWatchTime();
+  renderWatch();
 };
 $('bp-pen').onclick = ()=>{
   makerPenEquipped = !makerPenEquipped;
@@ -651,10 +796,6 @@ function createRoom(){
   toast('🏠 Room created!');
   return true;
 }
-$('w-create').onclick = ()=>{
-  if(createRoom()) toggleWatch();
-};
-
 /* VR */
 renderer.xr.enabled = true;
 document.body.appendChild(VRButton.createButton(renderer));
@@ -706,52 +847,160 @@ watchPanel.add(watchMesh);
 watchPanel.visible = false;
 scene.add(watchPanel);
 let watchHits = [];
+/* ---------- VR watch: 2026 Rec Room Home menu recreation (light theme) ---------- */
+let vrWatchPage = 'home', vrWatchTab = 'highlights', vrNote = '';
 function vrBtn(c, x, y, w, h, label, kind, hot){
-  c.fillStyle = hot ? 'rgba(255,106,43,.45)' : 'rgba(255,255,255,.10)';
-  c.beginPath(); c.roundRect(x, y, w, h, 25); c.fill();
-  c.strokeStyle = hot ? 'rgba(255,138,60,.7)' : 'rgba(255,255,255,.18)';
-  c.lineWidth = 2; c.stroke();
-  c.fillStyle = '#fff'; c.font = 'bold 22px sans-serif'; c.textAlign = 'center';
-  c.fillText(label, x + w/2, y + 33);
+  c.fillStyle = hot ? '#ffe3c8' : '#ffffff';
+  c.beginPath(); c.roundRect(x, y, w, h, 24); c.fill();
+  c.strokeStyle = hot ? '#ff8a3c' : '#e8c9a0'; c.lineWidth = 2; c.stroke();
+  c.fillStyle = '#2b2118'; c.font = 'bold 20px sans-serif'; c.textAlign = 'center';
+  c.fillText(label, x + w/2, y + h/2 + 7);
   watchHits.push({ x, y, w, h, kind });
+}
+function vrTile(c, x, y, w, h, icon, label, kind, dim){
+  c.globalAlpha = dim ? 0.55 : 1;
+  c.fillStyle = '#ffffff';
+  c.beginPath(); c.roundRect(x, y, w, h, 12); c.fill();
+  c.fillStyle = '#2b2118'; c.textAlign = 'center';
+  c.font = '26px sans-serif'; c.fillText(icon, x + w/2, y + 30);
+  c.font = 'bold 11px sans-serif'; c.fillText(label, x + w/2, y + h - 8);
+  c.globalAlpha = 1;
+  watchHits.push({ x, y, w, h, kind });
+}
+function vrCard(c, x, y, w, h, key){
+  const [emo, name] = splitLabel(PLACES[key].label);
+  const hot = key === place;
+  c.fillStyle = '#ffffff';
+  c.beginPath(); c.roundRect(x, y, w, h, 12); c.fill();
+  if(hot){ c.strokeStyle = '#ff8a3c'; c.lineWidth = 3; c.stroke(); }
+  c.fillStyle = '#efe0c8';
+  c.beginPath(); c.roundRect(x, y, w, 56, [12, 12, 0, 0]); c.fill();
+  c.fillStyle = '#2b2118'; c.textAlign = 'center';
+  c.font = '30px sans-serif'; c.fillText(emo, x + w/2, y + 40);
+  c.font = 'bold 13px sans-serif';
+  c.fillText(name.length > 14 ? name.slice(0, 13) + '…' : name, x + w/2, y + h - 10);
+  watchHits.push({ x, y, w, h, kind:'go:'+key });
+}
+const VR_DOCK = [
+  ['👤','PROFILE','dock:profile'], ['🏠','HOME','dock:home'], ['🎮','PLAY','dock:play'], ['👕','CUSTOM','dock:customize'],
+  ['🔨','CREATE','dock:create'], ['🛍️','STORE','dock:store'], ['👥','PEOPLE','dock:people'], ['📍','ROOM','dock:room'],
+  ['💬','CHAT','dock:chat'], ['🔔','ALERTS','dock:bell'], ['⚙️','SET','dock:settings'],
+];
+function vrDock(c, activePage){
+  const y = 622, h = 64, w = 42, gap = 2.6;
+  const grad = c.createLinearGradient(0, y, 0, y + h);
+  grad.addColorStop(0, '#f08a3c'); grad.addColorStop(1, '#d96a1f');
+  c.fillStyle = grad;
+  c.beginPath(); c.roundRect(0, y, 512, h, [0, 0, 20, 20]); c.fill();
+  VR_DOCK.forEach(([icon, label, kind], i)=>{
+    const x = 8 + i * (w + gap);
+    const active = (kind === 'dock:home' && activePage === 'home') || (kind === 'dock:play' && activePage === 'play');
+    const functional = kind === 'dock:home' || kind === 'dock:play' || kind === 'dock:create';
+    if(active){ c.fillStyle = 'rgba(0,0,0,.22)'; c.beginPath(); c.roundRect(x, y + 4, w, h - 8, 10); c.fill(); }
+    c.globalAlpha = functional ? 1 : 0.6;
+    c.fillStyle = '#fff'; c.textAlign = 'center';
+    c.font = '20px sans-serif'; c.fillText(icon, x + w/2, y + 28);
+    c.font = 'bold 9px sans-serif'; c.fillText(label, x + w/2, y + 46);
+    c.globalAlpha = 1;
+    watchHits.push({ x, y, w, h, kind });
+  });
+}
+function vrHeader(c){
+  const name = (playerName.trim() || 'Player');
+  c.fillStyle = '#ffffff';
+  c.beginPath(); c.roundRect(16, 14, 46, 46, 10); c.fill();
+  c.strokeStyle = '#ff8a3c'; c.lineWidth = 3; c.stroke();
+  c.fillStyle = '#2b2118'; c.textAlign = 'center'; c.font = 'bold 24px sans-serif';
+  c.fillText(name[0].toUpperCase(), 39, 46);
+  c.fillStyle = '#3fbf5f';
+  c.beginPath(); c.arc(58, 56, 7, 0, Math.PI * 2); c.fill();
+  c.textAlign = 'left';
+  c.fillStyle = '#2b2118'; c.font = 'bold 22px sans-serif';
+  c.fillText(name, 74, 36);
+  c.fillStyle = '#7a6a58'; c.font = '14px sans-serif';
+  c.fillText('@' + name.toLowerCase().replace(/\s+/g, ''), 74, 56);
+  const here = '📍 ' + splitLabel(PLACES[place].label)[1];
+  c.font = 'bold 14px sans-serif';
+  const tw = c.measureText(here).width + 24;
+  c.fillStyle = '#ffffff';
+  c.beginPath(); c.roundRect(496 - tw, 18, tw, 30, 15); c.fill();
+  c.fillStyle = '#2b2118'; c.textAlign = 'center';
+  c.fillText(here, 496 - tw/2, 38);
+}
+function vrSection(c, y, left, right, rightKind){
+  c.textAlign = 'left'; c.fillStyle = '#2b2118'; c.font = 'bold 17px sans-serif';
+  c.fillText(left, 16, y);
+  if(right){
+    c.textAlign = 'right'; c.fillStyle = '#b3551f'; c.font = 'bold 14px sans-serif';
+    c.fillText(right, 496, y);
+    if(rightKind) watchHits.push({ x: 400, y: y - 18, w: 96, h: 26, kind: rightKind });
+  }
+}
+function drawVRHome(c){
+  const tiles = [
+    ['▶️','Play','qa:play',false], ['🖊️','Create','qa:create',false], ['🛍️','Store','qa:store',true],
+    ['🎉','Events','qa:events',true], ['🛡️','Clubs','qa:clubs',true], ['🏆','Chall.','qa:challenges',true],
+    ['🎒','Backpack','qa:backpack',false],
+  ];
+  tiles.forEach(([icon, label, kind, dim], i)=>{
+    vrTile(c, 8 + i * 71, 78, 64, 62, icon, label, kind, dim);
+  });
+  vrBtn(c, 16, 152, 236, 48, '🛏️ Dorm Room', 'go:dorm', place === 'dorm');
+  vrBtn(c, 260, 152, 236, 48, '🏟️ Rec Center →', 'go:rec', place === 'rec');
+  vrSection(c, 228, 'Continue Playing', 'More Rooms →', 'more');
+  const keys = Object.keys(PLACES).slice(0, 6);
+  keys.forEach((k, i)=>{
+    const col = i % 3, row = Math.floor(i / 3);
+    vrCard(c, 16 + col * 162, 242 + row * 104, 152, 92, k);
+  });
+}
+function drawVRPlay(c){
+  const tabs = [['Highlights','tab:highlights'],['Search','tab:search'],['Library','tab:library']];
+  let x = 16;
+  tabs.forEach(([label, kind])=>{
+    const on = vrWatchTab === kind.slice(4);
+    c.fillStyle = on ? '#e8762d' : '#ffffff';
+    c.beginPath(); c.roundRect(x, 78, 120, 36, 18); c.fill();
+    c.fillStyle = on ? '#fff' : '#2b2118'; c.textAlign = 'center'; c.font = 'bold 15px sans-serif';
+    c.fillText(label, x + 60, 101);
+    watchHits.push({ x, y: 78, w: 120, h: 36, kind });
+    x += 130;
+  });
+  let keys = Object.keys(PLACES);
+  if(vrWatchTab === 'library') keys = keys.filter(k => PLACES[k].custom);
+  keys = keys.slice(0, 12);
+  if(!keys.length){
+    c.fillStyle = '#7a6a58'; c.textAlign = 'center'; c.font = '16px sans-serif';
+    c.fillText('Nothing here yet.', 256, 200);
+    return;
+  }
+  keys.forEach((k, i)=>{
+    const col = i % 3, row = Math.floor(i / 3);
+    vrCard(c, 16 + col * 162, 132 + row * 104, 152, 92, k);
+  });
+}
+function drawVRBackpack(c){
+  c.textAlign = 'center'; c.fillStyle = '#2b2118'; c.font = 'bold 20px sans-serif';
+  c.fillText('BACKPACK', 256, 100);
+  vrBtn(c, 16, 120, 480, 48, '🖊️ Maker Pen: ' + (makerPenEquipped ? 'ON' : 'OFF'), 'pen', makerPenEquipped);
+  vrBtn(c, 16, 180, 480, 48, '📷 Camera: ' + (cameraEquipped ? 'ON' : 'OFF'), 'cam', cameraEquipped);
+  if(cameraEquipped) vrBtn(c, 16, 240, 480, 52, '📷 TAKE PHOTO', 'snap', true);
+  vrBtn(c, 16, 312, 480, 48, '← Back to Home', 'dock:home', false);
 }
 function drawVRWatch(){
   const c = watchCtx;
   c.clearRect(0, 0, 512, 700);
-  c.fillStyle = 'rgba(13,18,32,.96)';
+  c.fillStyle = '#f6e3cd';
   c.beginPath(); c.roundRect(0, 0, 512, 700, 28); c.fill();
   watchHits = [];
-  /* round watch face with the real time, Rec Room style */
-  const now = new Date();
-  const hhmm = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
-  c.beginPath(); c.arc(256, 76, 44, 0, Math.PI * 2);
-  c.fillStyle = '#0e1526'; c.fill();
-  c.lineWidth = 5; c.strokeStyle = '#ff8a3c'; c.stroke();
+  vrHeader(c);
+  if(vrWatchPage === 'play') drawVRPlay(c);
+  else if(vrWatchPage === 'backpack') drawVRBackpack(c);
+  else drawVRHome(c);
   c.textAlign = 'center';
-  c.fillStyle = '#fff'; c.font = 'bold 30px sans-serif';
-  c.fillText(hhmm, 256, 80);
-  c.fillStyle = '#9aa3b5'; c.font = '13px sans-serif';
-  c.fillText(now.toLocaleDateString(undefined, { weekday:'short', month:'short', day:'numeric' }), 256, 100);
-  c.fillStyle = '#8b8e99'; c.font = 'bold 14px sans-serif';
-  c.fillText('W A T C H', 256, 142);
-  let y = 158;
-  c.fillStyle = '#8b8e99'; c.font = 'bold 17px sans-serif'; c.textAlign = 'left';
-  c.fillText('PLACES', 20, y); y += 10;
-  for(const key of Object.keys(PLACES)){
-    vrBtn(c, 16, y, 480, 46, PLACES[key].label, 'go:'+key, key === place);
-    y += 54;
-  }
-  y += 4;
-  c.fillStyle = '#8b8e99'; c.font = 'bold 17px sans-serif'; c.textAlign = 'left';
-  c.fillText('BACKPACK', 20, y); y += 10;
-  vrBtn(c, 16, y, 480, 46, '🖊️ Maker Pen: ' + (makerPenEquipped ? 'ON' : 'OFF'), 'pen', makerPenEquipped);
-  y += 54;
-  vrBtn(c, 16, y, 480, 46, '📷 Camera: ' + (cameraEquipped ? 'ON' : 'OFF'), 'cam', cameraEquipped);
-  y += 54;
-  if(makerPenEquipped){ vrBtn(c, 16, y, 480, 46, '➕ Create Room', 'create', false); y += 54; }
-  if(cameraEquipped){ vrBtn(c, 16, y, 480, 52, '📷 TAKE PHOTO', 'snap', true); y += 60; }
-  c.fillStyle = '#8b8e99'; c.font = '18px sans-serif'; c.textAlign = 'center';
-  c.fillText('B = close · trigger = press', 256, 690);
+  if(vrNote){ c.fillStyle = '#b3551f'; c.font = 'bold 16px sans-serif'; c.fillText(vrNote, 256, 608); }
+  else { c.fillStyle = '#7a6a58'; c.font = '15px sans-serif'; c.fillText('B = close · trigger = press', 256, 608); }
+  vrDock(c, vrWatchPage);
   watchTex.needsUpdate = true;
 }
 function toggleVRWatch(){
@@ -760,9 +1009,17 @@ function toggleVRWatch(){
 }
 function vrWatchPress(kind){
   if(kind.startsWith('go:')){ gotoPlace(kind.slice(3)); watchPanel.visible = false; }
+  else if(kind === 'qa:play'){ vrWatchPage = 'play'; vrNote = ''; drawVRWatch(); }
+  else if(kind === 'qa:create' || kind === 'dock:create'){ if(createRoom()) watchPanel.visible = false; drawVRWatch(); }
+  else if(kind === 'qa:backpack'){ vrWatchPage = 'backpack'; vrNote = ''; drawVRWatch(); }
+  else if(kind.startsWith('qa:')){ vrNote = 'Not in RecNova yet'; drawVRWatch(); }
+  else if(kind === 'dock:home'){ vrWatchPage = 'home'; vrNote = ''; drawVRWatch(); }
+  else if(kind === 'dock:play'){ vrWatchPage = 'play'; vrNote = ''; drawVRWatch(); }
+  else if(kind.startsWith('dock:')){ vrNote = 'Not in RecNova yet'; drawVRWatch(); }
+  else if(kind === 'more'){ vrWatchPage = 'play'; vrNote = ''; drawVRWatch(); }
+  else if(kind.startsWith('tab:')){ vrWatchTab = kind.slice(4); drawVRWatch(); }
   else if(kind === 'pen'){ $('bp-pen').onclick(); drawVRWatch(); }
   else if(kind === 'cam'){ setCameraEquipped(!cameraEquipped); drawVRWatch(); }
-  else if(kind === 'create'){ if(createRoom()) watchPanel.visible = false; drawVRWatch(); }
   else if(kind === 'snap'){ vrSnapPhoto(); }
 }
 /* --- photo panel --- */
