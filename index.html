@@ -529,6 +529,12 @@ function gotoPlace(name){
   vy = 0; grounded = true;
   $('loc').textContent = PLACES[place].label;
   renderWatchPlaces();
+  // maker pen tools only work in rooms you created — the pen itself stays
+  // equipped (you need it equipped to create a room in the first place)
+  if(makerPenEquipped && !PLACES[place].custom){
+    $('penmenu').classList.add('hidden');
+    toast('🖊️ The Maker Pen only works in rooms you created');
+  }
 }
 
 /* ============================== controls (PC + VR) ============================== */
@@ -703,7 +709,7 @@ $('bp-pen').onclick = ()=>{
   $('bp-pen').classList.toggle('equipped', makerPenEquipped);
   $('bp-penmenu').classList.toggle('hidden', !makerPenEquipped);
   if(!makerPenEquipped) $('penmenu').classList.add('hidden');
-  toast(makerPenEquipped ? '🖊️ Maker Pen equipped! Press E for the pen menu' : '🖊️ Maker Pen put away');
+  toast(makerPenEquipped ? '🖊️ Maker Pen equipped! It only works in rooms you created — press E for the pen menu' : '🖊️ Maker Pen put away');
 };
 $('bp-tab-skins').onclick = ()=>toast("Skins aren't in RecNova yet");
 $('bp-tab-food').onclick = ()=>toast("Consumables aren't in RecNova yet");
@@ -740,6 +746,7 @@ function renderPenMenu(){
 }
 function togglePenMenu(){
   if(!makerPenEquipped){ toast('⚠️ Equip the Maker Pen from your backpack first!'); return; }
+  if(!PLACES[place].custom){ toast('🖊️ You can only use the Maker Pen in a room you created'); return; }
   const m = $('penmenu');
   m.classList.toggle('hidden');
   if(!m.classList.contains('hidden')){ renderPenMenu(); document.exitPointerLock?.(); }
@@ -748,6 +755,7 @@ $('pm-close').onclick = togglePenMenu;
 $('pm-create').onclick = ()=>{ penTool = 'create'; renderPenMenu(); };
 $('pm-delete').onclick = ()=>{ penTool = 'delete'; renderPenMenu(); };
 $('pm-clear').onclick = ()=>{
+  if(!PLACES[place].custom) return;
   for(const m of (PLACES[place].props || [])) PLACES[place].group.remove(m);
   PLACES[place].props = [];
   toast('🧹 Props cleared');
@@ -769,7 +777,7 @@ function placePropAt(hit){
   return m;
 }
 function penAction(){
-  if(!makerPenEquipped) return;
+  if(!makerPenEquipped || !PLACES[place].custom) return;
   if(penTool === 'delete'){
     const hit = penHit(); if(!hit) return;
     let o = hit.object;
@@ -784,6 +792,7 @@ function penAction(){
   }
 }
 function vrPenAction(){
+  if(!PLACES[place].custom) return;
   const c = ctrl[1];
   const o = new THREE.Vector3(), d = new THREE.Vector3();
   c.getWorldPosition(o); c.getWorldDirection(d); d.negate();
@@ -1186,7 +1195,10 @@ function vrWatchPress(kind){
   else if(kind === 'dock:play'){ vrWatchPage = 'play'; vrNote = ''; drawVRWatch(); }
   else if(kind.startsWith('dock:')){ vrNote = 'Not in RecNova yet'; drawVRWatch(); }
   else if(kind === 'more'){ vrWatchPage = 'play'; vrNote = ''; drawVRWatch(); }
-  else if(kind === 'pen:open'){ vrWatchPage = 'pen'; vrNote = ''; drawVRWatch(); }
+  else if(kind === 'pen:open'){
+    if(!PLACES[place].custom){ vrNote = 'Only in rooms you created'; drawVRWatch(); }
+    else { vrWatchPage = 'pen'; vrNote = ''; drawVRWatch(); }
+  }
   else if(kind.startsWith('pen:shape:')){ penShape = kind.slice(10); drawVRWatch(); }
   else if(kind.startsWith('pen:color:')){ penColor = PEN_COLORS[+kind.slice(10)]; drawVRWatch(); }
   else if(kind === 'pen:tool:create'){ penTool = 'create'; drawVRWatch(); }
