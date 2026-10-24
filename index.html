@@ -113,21 +113,44 @@ if (location.hostname.indexOf('github.io') !== -1) {
     #watch .w-side .w-go { flex:1; }
     #watch .wdock .dl { display:none; }
   }
-  /* ---------- backpack ---------- */
+  /* ---------- backpack (Rec Room style: cream panel, tab pills, item tiles) ---------- */
   #backpack { position:fixed; z-index:30; left:50%; top:50%; transform:translate(-50%,-50%);
-    background:rgba(10,14,26,.92); border:1px solid rgba(255,255,255,.14); border-radius:18px;
-    padding:22px 20px; width:min(340px,86vw); backdrop-filter:blur(10px); }
-  #backpack h3 { margin:0 0 14px; text-align:center; font-size:20px; }
-  #backpack .wbtn { display:block; width:100%; margin:8px 0; padding:14px; font-size:16px; font-weight:700;
-    color:#fff; background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.12);
-    border-radius:12px; cursor:pointer; }
-  #backpack .wbtn.wclose { margin-top:6px; background:rgba(255,255,255,.04); }
-  .bp-item { display:flex; align-items:center; justify-content:space-between;
-    background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1);
-    border-radius:12px; padding:12px 14px; margin:8px 0; font-size:16px; font-weight:600; }
-  .bp-use { padding:8px 18px; font-size:14px; font-weight:700; color:#fff; cursor:pointer;
-    background:rgba(255,106,43,.35); border:1px solid rgba(255,106,43,.6); border-radius:10px; }
-  .bp-use.equipped { background:rgba(80,200,120,.3); border-color:rgba(80,200,120,.6); }
+    background:#f6e3cd; border-radius:24px; padding:20px; width:min(420px,90vw); color:#2b2118;
+    box-shadow:0 20px 60px rgba(0,0,0,.6); }
+  #backpack h3 { margin:0 0 12px; text-align:center; font-size:20px; }
+  #backpack .bp-tabs { display:flex; gap:8px; margin-bottom:14px; }
+  #backpack .bptab { border:0; border-radius:999px; padding:8px 18px; font-weight:700; cursor:pointer; background:#fff; color:#2b2118; }
+  #backpack .bptab.on { background:#e8762d; color:#fff; }
+  #backpack .bptab.dim { opacity:.55; }
+  #backpack .bp-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  #backpack .bp-tile { background:#fff; border-radius:14px; padding:14px 10px; text-align:center; }
+  #backpack .bp-tile .qi { font-size:34px; display:block; }
+  #backpack .bp-tile .qn { font-weight:700; font-size:14px; display:block; margin:6px 0 10px; }
+  #backpack .bp-use { padding:8px 18px; font-size:14px; font-weight:700; color:#fff; cursor:pointer;
+    background:rgba(255,106,43,.9); border:1px solid rgba(255,106,43,.6); border-radius:10px; }
+  #backpack .bp-use.equipped { background:rgba(80,200,120,.9); border-color:rgba(80,200,120,.6); }
+  #backpack .wbtn { display:block; width:100%; margin:10px 0 0; padding:12px; font-size:15px; font-weight:700;
+    color:#2b2118; background:#fff; border:1px solid #e8c9a0; border-radius:12px; cursor:pointer; }
+  /* ---------- maker pen menu ---------- */
+  #penmenu { position:fixed; z-index:30; left:50%; top:50%; transform:translate(-50%,-50%);
+    background:#f6e3cd; border-radius:24px; padding:20px; width:min(420px,90vw); color:#2b2118;
+    box-shadow:0 20px 60px rgba(0,0,0,.6); }
+  #penmenu h3 { margin:0 0 12px; text-align:center; font-size:20px; }
+  #penmenu .pm-sec { font-size:12px; font-weight:800; letter-spacing:2px; color:#7a6a58; margin:14px 2px 6px; }
+  #penmenu .pm-grid { display:grid; grid-template-columns:repeat(4, 1fr); gap:8px; }
+  #penmenu .pm-tile { background:#fff; border:2px solid transparent; border-radius:14px; padding:12px 4px 8px;
+    cursor:pointer; color:#2b2118; font-weight:700; font-size:13px; }
+  #penmenu .pm-tile .qi { font-size:24px; display:block; }
+  #penmenu .pm-tile.on { border-color:#ff8a3c; background:#ffe3c8; }
+  #penmenu .pm-dots { display:flex; gap:8px; }
+  #penmenu .pm-dot { flex:1; height:34px; border-radius:50%; border:3px solid #fff; cursor:pointer; padding:0; box-shadow:0 0 0 1px #e8c9a0; }
+  #penmenu .pm-dot.on { box-shadow:0 0 0 3px #ff8a3c; }
+  #penmenu .pm-tools { display:flex; gap:8px; }
+  #penmenu .pm-tools button { flex:1; padding:12px; font-size:15px; font-weight:700; cursor:pointer; color:#2b2118;
+    background:#fff; border:2px solid transparent; border-radius:12px; }
+  #penmenu .pm-tools button.on { border-color:#ff8a3c; background:#ffe3c8; }
+  #penmenu .wbtn { display:block; width:100%; margin:8px 0 0; padding:12px; font-size:15px; font-weight:700;
+    color:#2b2118; background:#fff; border:1px solid #e8c9a0; border-radius:12px; cursor:pointer; }
 
   /* ---------- photo viewer ---------- */
   #photo { position:fixed; z-index:35; left:50%; top:50%; transform:translate(-50%,-50%);
@@ -224,9 +247,31 @@ if (location.hostname.indexOf('github.io') !== -1) {
 </div>
 <div id="backpack" class="hidden">
   <h3>🎒 Backpack</h3>
-  <div class="bp-item"><span>🖊️ Maker Pen</span><button class="bp-use" id="bp-pen">Use</button></div>
-  <div class="bp-item"><span>📷 Camera</span><button class="bp-use" id="bp-cam">Use</button></div>
-  <button class="wbtn wclose" id="bp-close">Close</button>
+  <div class="bp-tabs">
+    <button class="bptab on" id="bp-tab-tools">Tools</button>
+    <button class="bptab dim" id="bp-tab-skins">Skins</button>
+    <button class="bptab dim" id="bp-tab-food">Consumables</button>
+  </div>
+  <div class="bp-grid">
+    <div class="bp-tile"><span class="qi">🖊️</span><span class="qn">Maker Pen</span><button class="bp-use" id="bp-pen">Use</button></div>
+    <div class="bp-tile"><span class="qi">📷</span><span class="qn">Camera</span><button class="bp-use" id="bp-cam">Use</button></div>
+  </div>
+  <button class="wbtn hidden" id="bp-penmenu">🖊️ Pen Menu (E)</button>
+  <button class="wbtn" id="bp-close">Close</button>
+</div>
+<div id="penmenu" class="hidden">
+  <h3>🖊️ Maker Pen</h3>
+  <div class="pm-sec">SHAPE</div>
+  <div class="pm-grid" id="pm-shapes"></div>
+  <div class="pm-sec">COLOR</div>
+  <div class="pm-dots" id="pm-colors"></div>
+  <div class="pm-sec">TOOL</div>
+  <div class="pm-tools">
+    <button id="pm-create">➕ Create</button>
+    <button id="pm-delete">🗑️ Delete</button>
+  </div>
+  <button class="wbtn" id="pm-clear">🧹 Clear all props here</button>
+  <button class="wbtn" id="pm-close">Close (E)</button>
 </div>
 <div id="photo" class="hidden">
   <h3>📷 Photo</h3>
@@ -259,7 +304,7 @@ if (location.hostname.indexOf('github.io') !== -1) {
   <button id="cam-away">✖ Put away</button>
 </div>
 <div id="toast"></div>
-<div id="hint" class="hidden"><b>WASD</b> move · <b>mouse</b> look · <b>Tab</b> watch · <b>Space</b> jump</div>
+<div id="hint" class="hidden"><b>WASD</b> move · <b>mouse</b> look · <b>Tab</b> watch · <b>Space</b> jump · <b>E</b> pen menu</div>
 
 <script type="importmap">
 { "imports": {
@@ -457,8 +502,8 @@ function solidAt(place,x,z){
 
 /* ============================== places / teleport ============================== */
 const PLACES = {
-  dorm: { group:dorm, label:'🛏️ Dorm Room' },
-  rec:  { group:rec,  label:'🏟️ Rec Center' },
+  dorm: { group:dorm, label:'🛏️ Dorm Room', props:[] },
+  rec:  { group:rec,  label:'🏟️ Rec Center', props:[] },
 };
 let place = 'rec';   // rec visible until models load, then gotoPlace('dorm') runs
 let yaw = 0, pitch = 0, vy = 0, grounded = true;
@@ -492,6 +537,7 @@ addEventListener('keydown', e=>{
   if(e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;   // typing
   if(!$('username').classList.contains('hidden')) return;
   if(e.code==='Tab'){ e.preventDefault(); toggleWatch(); return; }
+  if(e.code==='KeyE' && makerPenEquipped){ togglePenMenu(); return; }
   if(e.code==='KeyC'){ snapPhoto(); return; }
   keys[e.code] = true;
   if(e.code==='Space') e.preventDefault();
@@ -501,7 +547,8 @@ addEventListener('keyup', e=> keys[e.code] = false);
 let locked = false;
 renderer.domElement.addEventListener('click', ()=>{
   if(!allReady() || !$('watch').classList.contains('hidden')) return;
-  renderer.domElement.requestPointerLock?.();
+  if(!locked){ renderer.domElement.requestPointerLock?.(); return; }
+  if(makerPenEquipped) penAction();
 });
 document.addEventListener('pointerlockchange', ()=>{ locked = document.pointerLockElement === renderer.domElement; });
 addEventListener('mousemove', e=>{
@@ -654,8 +701,106 @@ $('bp-pen').onclick = ()=>{
   makerPenEquipped = !makerPenEquipped;
   $('bp-pen').textContent = makerPenEquipped ? 'Unequip' : 'Use';
   $('bp-pen').classList.toggle('equipped', makerPenEquipped);
-  toast(makerPenEquipped ? '🖊️ Maker Pen equipped!' : '🖊️ Maker Pen put away');
+  $('bp-penmenu').classList.toggle('hidden', !makerPenEquipped);
+  if(!makerPenEquipped) $('penmenu').classList.add('hidden');
+  toast(makerPenEquipped ? '🖊️ Maker Pen equipped! Press E for the pen menu' : '🖊️ Maker Pen put away');
 };
+$('bp-tab-skins').onclick = ()=>toast("Skins aren't in RecNova yet");
+$('bp-tab-food').onclick = ()=>toast("Consumables aren't in RecNova yet");
+
+/* ---------- maker pen menu + tools ---------- */
+let penShape = 'cube', penColor = 0xff6a2b, penTool = 'create';
+const PEN_SHAPES = {
+  cube: ['📦', 'Cube', ()=>new THREE.BoxGeometry(1, 1, 1)],
+  ball: ['🏀', 'Ball', ()=>new THREE.SphereGeometry(0.5, 24, 18)],
+  tube: ['🥤', 'Tube', ()=>new THREE.CylinderGeometry(0.5, 0.5, 1, 24)],
+  cone: ['🔺', 'Cone', ()=>new THREE.ConeGeometry(0.6, 1, 24)],
+};
+const PEN_COLORS = [0xff6a2b, 0xff3d5a, 0xffd23f, 0x3fbf5f, 0x2f7de1, 0x9b5cff, 0xffffff, 0x2b2118];
+function renderPenMenu(){
+  const sg = $('pm-shapes'); sg.innerHTML = '';
+  for(const key of Object.keys(PEN_SHAPES)){
+    const b = document.createElement('button');
+    b.className = 'pm-tile' + (penShape === key ? ' on' : '');
+    const i = document.createElement('span'); i.className = 'qi'; i.textContent = PEN_SHAPES[key][0];
+    b.append(i, document.createTextNode(PEN_SHAPES[key][1]));
+    b.onclick = ()=>{ penShape = key; renderPenMenu(); };
+    sg.appendChild(b);
+  }
+  const cd = $('pm-colors'); cd.innerHTML = '';
+  PEN_COLORS.forEach((col)=>{
+    const b = document.createElement('button');
+    b.className = 'pm-dot' + (penColor === col ? ' on' : '');
+    b.style.background = '#' + col.toString(16).padStart(6, '0');
+    b.onclick = ()=>{ penColor = col; renderPenMenu(); };
+    cd.appendChild(b);
+  });
+  $('pm-create').classList.toggle('on', penTool === 'create');
+  $('pm-delete').classList.toggle('on', penTool === 'delete');
+}
+function togglePenMenu(){
+  if(!makerPenEquipped){ toast('⚠️ Equip the Maker Pen from your backpack first!'); return; }
+  const m = $('penmenu');
+  m.classList.toggle('hidden');
+  if(!m.classList.contains('hidden')){ renderPenMenu(); document.exitPointerLock?.(); }
+}
+$('pm-close').onclick = togglePenMenu;
+$('pm-create').onclick = ()=>{ penTool = 'create'; renderPenMenu(); };
+$('pm-delete').onclick = ()=>{ penTool = 'delete'; renderPenMenu(); };
+$('pm-clear').onclick = ()=>{
+  for(const m of (PLACES[place].props || [])) PLACES[place].group.remove(m);
+  PLACES[place].props = [];
+  toast('🧹 Props cleared');
+};
+$('bp-penmenu').onclick = ()=>{ $('backpack').classList.add('hidden'); togglePenMenu(); };
+const penRay = new THREE.Raycaster();
+function penHit(){
+  penRay.setFromCamera(new THREE.Vector2(0, 0), camera);
+  const hits = penRay.intersectObject(PLACES[place].group, true);
+  return hits[0] || null;
+}
+function placePropAt(hit){
+  const m = new THREE.Mesh(PEN_SHAPES[penShape][2](), new THREE.MeshStandardMaterial({ color: penColor, roughness:.6 }));
+  const n = hit.face ? hit.face.normal.clone().transformDirection(hit.object.matrixWorld) : new THREE.Vector3(0, 1, 0);
+  m.position.copy(hit.point).addScaledVector(n, 0.5);
+  m.userData.isProp = true;
+  PLACES[place].group.add(m);
+  (PLACES[place].props ||= []).push(m);
+  return m;
+}
+function penAction(){
+  if(!makerPenEquipped) return;
+  if(penTool === 'delete'){
+    const hit = penHit(); if(!hit) return;
+    let o = hit.object;
+    while(o && !o.userData.isProp) o = o.parent;
+    if(!o) return;
+    PLACES[place].group.remove(o);
+    const arr = PLACES[place].props || [];
+    const i = arr.indexOf(o); if(i >= 0) arr.splice(i, 1);
+  } else {
+    const hit = penHit();
+    if(hit) placePropAt(hit);
+  }
+}
+function vrPenAction(){
+  const c = ctrl[1];
+  const o = new THREE.Vector3(), d = new THREE.Vector3();
+  c.getWorldPosition(o); c.getWorldDirection(d); d.negate();
+  vrRay.set(o, d);
+  if(penTool === 'delete'){
+    const hits = vrRay.intersectObjects(PLACES[place].props || [], false);
+    if(hits.length){
+      const m = hits[0].object;
+      PLACES[place].group.remove(m);
+      const arr = PLACES[place].props || [];
+      const i = arr.indexOf(m); if(i >= 0) arr.splice(i, 1);
+    }
+  } else {
+    const hits = vrRay.intersectObject(PLACES[place].group, true);
+    if(hits.length) placePropAt(hits[0]);
+  }
+}
 /* ---------- camera: snap photos ---------- */
 let cameraEquipped = false, AC = null;
 function setCameraEquipped(on){
@@ -789,7 +934,7 @@ function createRoom(){
   const group = makeRoom();
   group.visible = false;
   scene.add(group);
-  PLACES[key] = { group, label, custom:true,
+  PLACES[key] = { group, label, custom:true, props:[],
     spawn:{ x:0, y:0, z:0, yaw:0 }, bounds:5 };
   renderWatchPlaces();
   gotoPlace(key);
@@ -981,11 +1126,34 @@ function drawVRPlay(c){
 }
 function drawVRBackpack(c){
   c.textAlign = 'center'; c.fillStyle = '#2b2118'; c.font = 'bold 20px sans-serif';
-  c.fillText('BACKPACK', 256, 100);
-  vrBtn(c, 16, 120, 480, 48, '🖊️ Maker Pen: ' + (makerPenEquipped ? 'ON' : 'OFF'), 'pen', makerPenEquipped);
-  vrBtn(c, 16, 180, 480, 48, '📷 Camera: ' + (cameraEquipped ? 'ON' : 'OFF'), 'cam', cameraEquipped);
-  if(cameraEquipped) vrBtn(c, 16, 240, 480, 52, '📷 TAKE PHOTO', 'snap', true);
-  vrBtn(c, 16, 312, 480, 48, '← Back to Home', 'dock:home', false);
+  c.fillText('🎒 BACKPACK', 256, 100);
+  vrTile(c, 16, 120, 232, 78, '🖊️', 'Maker Pen: ' + (makerPenEquipped ? 'ON' : 'OFF'), 'pen', false);
+  vrTile(c, 264, 120, 232, 78, '📷', 'Camera: ' + (cameraEquipped ? 'ON' : 'OFF'), 'cam', false);
+  let y = 216;
+  if(makerPenEquipped){ vrBtn(c, 16, y, 480, 48, '🖊️ Pen Menu', 'pen:open', false); y += 60; }
+  if(cameraEquipped){ vrBtn(c, 16, y, 480, 52, '📷 TAKE PHOTO', 'snap', true); y += 60; }
+  vrBtn(c, 16, y, 480, 48, '← Back to Home', 'dock:home', false);
+}
+function drawVRPen(c){
+  c.textAlign = 'center'; c.fillStyle = '#2b2118'; c.font = 'bold 20px sans-serif';
+  c.fillText('🖊️ MAKER PEN', 256, 100);
+  const shapes = [['📦','Cube','cube'],['🏀','Ball','ball'],['🥤','Tube','tube'],['🔺','Cone','cone']];
+  shapes.forEach(([icon, label, key], i)=>{
+    const x = 16 + i * 124;
+    vrTile(c, x, 120, 112, 62, icon, label, 'pen:shape:'+key, penShape !== key);
+    if(penShape === key){ c.strokeStyle = '#ff8a3c'; c.lineWidth = 3; c.beginPath(); c.roundRect(x, 120, 112, 62, 12); c.stroke(); }
+  });
+  PEN_COLORS.forEach((col, i)=>{
+    const cx = 40 + i * 58, cy = 222;
+    c.fillStyle = '#' + col.toString(16).padStart(6, '0');
+    c.beginPath(); c.arc(cx, cy, 18, 0, Math.PI * 2); c.fill();
+    c.strokeStyle = penColor === col ? '#ff8a3c' : '#ffffff'; c.lineWidth = penColor === col ? 4 : 2; c.stroke();
+    watchHits.push({ x: cx - 22, y: cy - 22, w: 44, h: 44, kind: 'pen:color:' + i });
+  });
+  vrBtn(c, 16, 262, 236, 48, '➕ Create', 'pen:tool:create', penTool === 'create');
+  vrBtn(c, 260, 262, 236, 48, '🗑️ Delete', 'pen:tool:delete', penTool === 'delete');
+  vrBtn(c, 16, 322, 480, 48, '🧹 Clear all props here', 'pen:clear', false);
+  vrBtn(c, 16, 382, 480, 48, '← Back to Backpack', 'pen:back', false);
 }
 function drawVRWatch(){
   const c = watchCtx;
@@ -996,6 +1164,7 @@ function drawVRWatch(){
   vrHeader(c);
   if(vrWatchPage === 'play') drawVRPlay(c);
   else if(vrWatchPage === 'backpack') drawVRBackpack(c);
+  else if(vrWatchPage === 'pen') drawVRPen(c);
   else drawVRHome(c);
   c.textAlign = 'center';
   if(vrNote){ c.fillStyle = '#b3551f'; c.font = 'bold 16px sans-serif'; c.fillText(vrNote, 256, 608); }
@@ -1017,6 +1186,13 @@ function vrWatchPress(kind){
   else if(kind === 'dock:play'){ vrWatchPage = 'play'; vrNote = ''; drawVRWatch(); }
   else if(kind.startsWith('dock:')){ vrNote = 'Not in RecNova yet'; drawVRWatch(); }
   else if(kind === 'more'){ vrWatchPage = 'play'; vrNote = ''; drawVRWatch(); }
+  else if(kind === 'pen:open'){ vrWatchPage = 'pen'; vrNote = ''; drawVRWatch(); }
+  else if(kind.startsWith('pen:shape:')){ penShape = kind.slice(10); drawVRWatch(); }
+  else if(kind.startsWith('pen:color:')){ penColor = PEN_COLORS[+kind.slice(10)]; drawVRWatch(); }
+  else if(kind === 'pen:tool:create'){ penTool = 'create'; drawVRWatch(); }
+  else if(kind === 'pen:tool:delete'){ penTool = 'delete'; drawVRWatch(); }
+  else if(kind === 'pen:clear'){ for(const m of (PLACES[place].props || [])) PLACES[place].group.remove(m); PLACES[place].props = []; drawVRWatch(); }
+  else if(kind === 'pen:back'){ vrWatchPage = 'backpack'; drawVRWatch(); }
   else if(kind.startsWith('tab:')){ vrWatchTab = kind.slice(4); drawVRWatch(); }
   else if(kind === 'pen'){ $('bp-pen').onclick(); drawVRWatch(); }
   else if(kind === 'cam'){ setCameraEquipped(!cameraEquipped); drawVRWatch(); }
@@ -1212,6 +1388,10 @@ function stepVR(dt){
   // trigger (index 0): press buttons on the 3D panels
   if((watchPanel.visible || photoPanel.visible) && edgePressed(ctrl[1], 0)){
     vrPanelTrigger(ctrl[1]);
+  }
+  // trigger (index 0): maker pen placement when no panel is open
+  if(!(watchPanel.visible || photoPanel.visible) && makerPenEquipped && edgePressed(ctrl[1], 0)){
+    vrPenAction();
   }
 }
 function animate(){
