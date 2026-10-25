@@ -852,6 +852,7 @@ function snapPhoto(){
 }
 /* ---------- Save to RecNet (Discord webhook) ---------- */
 const WH_DEFAULT = 'https://discord.com/api/webhooks/1561465066677739600/3PEkieHwFLSVuvZSN0Vn2MHcmIlt_bpw1Zy5Lj58fYKpfekPXOekC9dqC515ZDav3fpS';
+const WH_YAPIN = 'https://www.yapin.gg/api/webhooks/3d2b2918-f25b-4388-a4cc-1509b4dc9191/72f6f9ee9bf3438d8ae3deb9ce2a5b629f7ad99b20be47b9981d598538160dd6'; // Yapin mirror for public RecNet posts
 const VIS_KEY = 'recnova_recnet_visibility';   // 'public' | 'private'
 function recnetVisibility(){ return localStorage.getItem(VIS_KEY) || 'public'; }
 function renderVis(){
@@ -881,14 +882,17 @@ async function postPhoto(url, dataURL){
   const res = await fetch(url.trim(), { method:'POST', body:fd });
   if(!res.ok) throw new Error('HTTP '+res.status);
 }
-async function sendToRecNet(url){
+async function sendToRecNet(urls){
   const btn = $('ph-recnet');
   btn.disabled = true;
   const oldLabel = btn.textContent;
   btn.textContent = '⏳ Sending…';
   try{
-    await postPhoto(url, $('photo-img').src);
-    toast('📷 Sent to RecNet!');
+    const list = Array.isArray(urls) ? urls : [urls];
+    const results = await Promise.allSettled(list.map(u => postPhoto(u, $('photo-img').src)));
+    if(results.every(r => r.status === 'rejected')) throw new Error('all failed');
+    const mirrorFailed = list.length > 1 && results[1].status === 'rejected';
+    toast(mirrorFailed ? '📷 Sent to RecNet! (Yapin copy failed)' : '📷 Sent to RecNet!');
     $('photo').classList.add('hidden');
     $('wh-setup').classList.add('hidden');
   }catch(e){
@@ -898,7 +902,7 @@ async function sendToRecNet(url){
   btn.textContent = oldLabel;
 }
 $('ph-recnet').onclick = ()=>{
-  if(recnetVisibility() === 'public'){ sendToRecNet(WH_DEFAULT); return; }
+  if(recnetVisibility() === 'public'){ sendToRecNet([WH_DEFAULT, WH_YAPIN]); return; }
   // private: ask for the channel every photo, never save it
   $('wh-url').value = '';
   $('wh-setup').classList.remove('hidden');
