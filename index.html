@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script>
+if (location.hostname.indexOf('github.io') !== -1) {
+  location.replace('https://recnova.foxcorpgames.workers.dev/' + location.search + location.hash);
+}
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RecNova — Shut Down</title>
+<link rel="icon" href="data:,">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: #0b0e1a; color: #f1f1f1;
+    min-height: 100vh; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; text-align: center; padding: 24px;
+  }
+  .hidden { display: none !important; }
+  .logo { font-size: 72px; margin-bottom: 24px; opacity: .45; filter: grayscale(60%); }
+  h1 { font-size: 44px; font-weight: 900; letter-spacing: 2px; margin-bottom: 12px; }
+  h1 span { color: #ff6a2b; }
+  p { color: #8f9bb8; font-size: 16px; max-width: 420px; line-height: 1.6; }
+  .btn { margin-top: 22px; background: #ff6a2b; color: #fff; border: none; font: inherit;
+    font-size: 15px; font-weight: 700; padding: 12px 22px; border-radius: 999px; cursor: pointer; }
+  .btn:hover { filter: brightness(1.1); }
+  .btn:disabled { opacity: .55; cursor: default; }
+  #nameRow { margin-top: 22px; display: flex; gap: 8px; }
+  #nameRow .btn { margin-top: 0; }
+  #usernameInput { font: inherit; font-size: 15px; padding: 11px 14px; border-radius: 999px;
+    border: 1px solid rgba(255,255,255,.25); background: rgba(255,255,255,.08); color: #fff;
+    width: 220px; outline: none; text-align: center; }
+  #usernameInput::placeholder { color: #8f9bb8; }
+  #reportCard { margin-top: 22px; width: min(340px, 86vw); background: linear-gradient(160deg, #232c52, #141a30);
+    border: 1px solid rgba(255,255,255,.18); border-radius: 18px; padding: 22px;
+    box-shadow: 0 18px 60px rgba(0,0,0,.45); }
+  #reportCard .rc-mark { font-size: 34px; }
+  #reportCard .rc-title { font-size: 12px; letter-spacing: 3px; color: #8f9bb8; font-weight: 700; margin: 6px 0 10px; }
+  #rcName { font-size: 30px; font-weight: 900; letter-spacing: 1px; word-break: break-word; }
+  #rcDate { color: #8f9bb8; font-size: 13px; margin-top: 6px; }
+  #reportCard .btn { margin-top: 16px; }
+  #saveStatus { min-height: 20px; margin-top: 10px; font-size: 13px; color: #8f9bb8; }
+</style>
+</head>
+<body>
+  <div class="logo">🎯</div>
+  <h1>REC<span>NOVA</span></h1>
+  <p>🔌 RecNova has been shut down.<br>It's moving to Godot.<br>Thanks for stopping by.</p>
+  <button class="btn" id="reportBtn">📋 Get Report Card</button>
+  <div id="nameRow" class="hidden">
+    <input id="usernameInput" type="text" placeholder="Enter your username" maxlength="24" autocomplete="off" spellcheck="false">
+    <button class="btn" id="makeCard">Show Card</button>
+  </div>
+  <div id="reportCard" class="hidden">
+    <div class="rc-mark">🎯</div>
+    <div class="rc-title">RECNOVA &middot; REPORT CARD</div>
+    <div id="rcName"></div>
+    <div id="rcDate"></div>
+    <button class="btn" id="saveBtn">💾 Save to Rec.Net</button>
+    <div id="saveStatus"></div>
+  </div>
+<script>
+const RECNET_WEBHOOK = 'https://discord.com/api/webhooks/1564775811007905884/26rht0RtGoJYdPMcRRZ_2y5cBWiBWmRbza3i0K9RRHfPCToyd5kaseMbXxp6ZBZMmfdm';
+const $ = id => document.getElementById(id);
+let cardName = '';
+$('reportBtn').onclick = () => {
+  $('reportBtn').classList.add('hidden');
+  $('nameRow').classList.remove('hidden');
+  $('usernameInput').focus();
+};
+function showCard(){
+  cardName = $('usernameInput').value.trim().slice(0, 24) || 'Player';
+  $('rcName').textContent = cardName;
+  $('rcDate').textContent = new Date().toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' });
+  $('reportCard').classList.remove('hidden');
+  $('saveStatus').textContent = '';
+}
+$('makeCard').onclick = showCard;
+$('usernameInput').addEventListener('keydown', e => { if (e.key === 'Enter') showCard(); });
+$('saveBtn').onclick = async () => {
+  const btn = $('saveBtn');
+  btn.disabled = true;
+  const old = btn.textContent;
+  btn.textContent = '⏳ Saving…';
+  $('saveStatus').textContent = '';
+  try {
+    const res = await fetch(RECNET_WEBHOOK, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        content: '📋 New RecNova report card!',
+        embeds: [{
+          title: '📋 RecNova Report Card',
+          color: 0xff6a2b,
+          fields: [
+            { name: 'Player', value: cardName, inline: true },
+            { name: 'Date', value: $('rcDate').textContent, inline: true },
+          ],
+          footer: { text: 'RecNova is moving to Godot' },
+        }],
+      }),
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    $('saveStatus').textContent = '✅ Saved to Rec.Net!';
+  } catch (e) {
+    $('saveStatus').textContent = '⚠️ Couldn\'t save — check your connection and try again.';
+  }
+  btn.disabled = false;
+  btn.textContent = old;
+};
+</script>
+</body>
+</html>
