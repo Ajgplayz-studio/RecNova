@@ -62,7 +62,6 @@ if (location.hostname.indexOf('github.io') !== -1) {
     <div id="saveStatus"></div>
   </div>
 <script>
-const RECNET_WEBHOOK = 'https://discord.com/api/webhooks/1564775811007905884/26rht0RtGoJYdPMcRRZ_2y5cBWiBWmRbza3i0K9RRHfPCToyd5kaseMbXxp6ZBZMmfdm';
 const $ = id => document.getElementById(id);
 let cardName = '';
 $('reportBtn').onclick = () => {
@@ -80,13 +79,16 @@ function showCard(){
 $('makeCard').onclick = showCard;
 $('usernameInput').addEventListener('keydown', e => { if (e.key === 'Enter') showCard(); });
 $('saveBtn').onclick = async () => {
+  const webhookUrl = (prompt('Paste your webhook URL:') || '').trim();
+  if (!webhookUrl) { $('saveStatus').textContent = 'Paste a webhook URL to save.'; return; }
+  if (!webhookUrl.startsWith('http')) { $('saveStatus').textContent = 'That doesn\'t look like a webhook URL.'; return; }
   const btn = $('saveBtn');
   btn.disabled = true;
   const old = btn.textContent;
   btn.textContent = '⏳ Saving…';
   $('saveStatus').textContent = '';
   try {
-    const res = await fetch(RECNET_WEBHOOK, {
+    const res = await fetch(webhookUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
